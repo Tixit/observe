@@ -48,7 +48,7 @@ Install
 npm install observe
 ```
 
-or download the built package generatedBuilds/observe.umd.js from the repository and include it in a <script> tag.
+or download the built package generatedBuilds/observe.umd.js from the repository and include it in a &lt;script> tag.
 
 Usage
 =====
