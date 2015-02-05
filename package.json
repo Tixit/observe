@@ -1,0 +1,22 @@
+{"name":"async-future",
+ "description": "A powerful, pragmatic implementation of the observer pattern for javascript objects and arrays.",
+ "keywords": ["observe", "observer"],
+ "version":"1.0.0",
+ "main": "observe.js",
+ "author": "Billy Tetrud <bitetrudpublic@gmail.com> (https://github.com/fresheneesz/)",
+ "license": {
+   "name": "MIT",
+   "url": "http://www.opensource.org/licenses/mit-license.php"
+ },
+ "repository": {
+   "type": "git",
+   "url": "git://github.com/Tixit/observe"
+ },
+ "dependencies":{
+    "proto": ""
+ },
+ "devDependencies": {
+    "deadunit":"",
+    "build-modules":"1.0.12"
+ }
+}
