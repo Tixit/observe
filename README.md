@@ -104,7 +104,7 @@ observer.id(ignoreA).set('a', 1)  // prints "B", but not "A"
 ```
 
 `observer.union(collapse)` - Returns an observer object for which any property added via set, push, splice, or append joins an internal observee together with this observee, so that the internal observee and the containing observee will both send 'change' events appropriately.
-* `collapse` - (default: false) Ff true, any property added will be set to the subject of the value added (so that value won't be an observee anymore). Note: only use collapse:true if the observees you're unioning isn't actually an object that inherits from an observee - any instance methods on the observee that come from child classes won't be accessible anymore.
+* `collapse` - (default: false) If true, any property added will be set to the subject of the value added (so that value won't be an observee anymore). Note: only use collapse:true if the observees you're unioning isn't actually an object that inherits from an observee - any instance methods on the observee that come from child classes won't be accessible anymore.
 
 Example:
 
