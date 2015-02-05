@@ -1,6 +1,6 @@
 {"name":"async-future",
  "description": "A powerful, pragmatic implementation of the observer pattern for javascript objects and arrays.",
- "keywords": ["observe", "observer"],
+ "keywords": ["observe", "observer", "observer pattern", "reactive", "mvc", "data binding", "MutationObserver", "publish", "subscribe", "pubsub", "event", "events"],
  "version":"1.0.0",
  "main": "observe.js",
  "author": "Billy Tetrud <bitetrudpublic@gmail.com> (https://github.com/fresheneesz/)",

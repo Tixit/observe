@@ -1,0 +1,10 @@
+{
+  "name": "async-future",
+  "version": "1.0.0",
+  "dependencies": {
+    "proto": {
+      "version": "1.0.11",
+      "from": "proto@"
+    }
+  }
+}
