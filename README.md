@@ -39,7 +39,7 @@ observer.get('c').append([5,6,7])// prints "My c property got 3 new values: 5,6,
 
 Why not use `Object.observe`?
 =====================
-`Object.observe` is fantastic - if you live in the future! Attempts at polyfilling this simply aren't practicle, because they have to use polling. Since this won't be practically usable until ECMAScript 7 is widespread, this module will do what you need almost as elegantly. Also, `Object.observe` doesn't have the `id` feature (see below).
+`Object.observe` is fantastic - if you live in the future! Attempts at polyfilling this simply aren't practical, because they have to use polling. Since this won't be practically usable until ECMAScript 7 is widespread, this module will do what you need almost as elegantly. Also, `Object.observe` doesn't have the `id` feature (see below).
 
 Install
 =======
@@ -133,6 +133,40 @@ The change event comes through whenever an observer is used to `set`, `push`, or
 * `count` - The number of elements added. Only exists for `"added"` events.
 * `values` - The list of values removed from an array. Only exists for `"removed"` events.
 
+Inheriting from observe
+-----------------------
+
+So while observe is usually used a a function, it's actually an object constructor. You can inherit from `observe` just like you might inherit from  any other object in javascript. Instances created from a constructor who's parent is `observe` will have all the methods above. For example:
+
+```javascript
+var SpecialObserver = function() {
+    observe.apply(this,arguments) // superclass constructor call
+}
+SpecialObserver.prototype = observe({})
+SpecialObserver.prototype.specialMethod = function() {
+   console.log("Hi! My prototype says I'm special! My x is "+this.subject.x)
+}
+
+var s = new SpecialObserver({x:1})
+s.set('x', 2)
+s.specialMethod() // prints ""Hi! My prototype says I'm special! My x is 2"
+```
+
+Or if you're using [proto](https://github.com/fresheneesz/proto):
+```javascript
+var SpecialObserver2 = proto(observe, function() {
+   this.specialMethod = function() {
+      console.log("Hi! My prototype says I'm special! My x is "+this.subject.x)
+   }
+})
+
+var s2 = SpecialObserver2({x:1})
+s.set('x',2)
+s.specialMethod() // same thing as above
+
+```
+
+Note that if you do this, `observer.union(true)` will *not* add objects in such a way that preserves the special methods. You'll need to use `observer.union(false)` (or simply leave out the argument) and deal with the double subject in there.
 
 Changelog
 ========
