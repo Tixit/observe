@@ -58,7 +58,7 @@ var Future = require('observe')  // node-js and webpack
 
 define(['observe'], function(observe) { ... } // amd
 
-observe; // proto.global.js defines proto globally
+observe; // observe.global.js defines proto globally
        // if you really  want to shun module-based design
 ```
 
@@ -67,20 +67,20 @@ observe; // proto.global.js defines proto globally
 
 **`observer.subject`** - the object being observed (same as the `obj` passed in)
 
-`observer.set(property, value)` - Sets a value on the observer's subject and emits a `"set"` change event.
+**`observer.set(property, value)`** - Sets a value on the observer's subject and emits a `"set"` change event.
 * `property` - The propety to set, in dot notation (see below).
 * `value` - The value to set on that property.
 
-`observer.push(...)` - Your standard javascript `push` method. Also emits an `"added" change event.
+**`observer.push(...)`** - Your standard javascript `push` method. Also emits an `"added" change event.
 
-`observer.splice(...)` - Your standard javascript `splice` method. Can emit a `"removed"` change event, then an `"added"` change event (only emits both if values are both added *and* removed).
+**`observer.splice(...)`** - Your standard javascript `splice` method. Can emit a `"removed"` change event, then an `"added"` change event (only emits both if values are both added *and* removed).
 
-`observer.append(...)` - Slightly optimized shorthand for `observer.slice(observer.subject.length,0,...)`.
+**`observer.append(...)`** - Slightly optimized shorthand for `observer.slice(observer.subject.length,0,...)`.
 
-`observer.get(property)` - Returns a new observer for a property within the observer's subject. Any changes done to the returned observer will trigger events on the calling observer, but you can also set up an event listener on the returned observer.
+**`observer.get(property)`** - Returns a new observer for a property within the observer's subject. Any changes done to the returned observer will trigger events on the calling observer, but you can also set up an event listener on the returned observer.
 * `property` - The propety to get an observer for, in dot notation (see below).
 
-`observer.id(value)` - Returns a new observer that will include the passed value as the `id` property in change events caused by that observer. This can be useful if you need to ignore a change event in certain handlers but not other, or if you need to pass additional information. For example:
+**`observer.id(value)`** - Returns a new observer that will include the passed value as the `id` property in change events caused by that observer. This can be useful if you need to ignore a change event in certain handlers but not other, or if you need to pass additional information. For example:
 
 ```javascript
 var observer = observer({})
@@ -103,7 +103,7 @@ observer.id(ignoreA).set('a', 1)  // prints "B", but not "A"
 
 ```
 
-`observer.union(collapse)` - Returns an observer object for which any property added via set, push, splice, or append joins an internal observee together with this observee, so that the internal observee and the containing observee will both send 'change' events appropriately.
+**`observer.union(collapse)`** - Returns an observer object for which any property added via set, push, splice, or append joins an internal observee together with this observee, so that the internal observee and the containing observee will both send 'change' events appropriately.
 * `collapse` - (default: false) If true, any property added will be set to the subject of the value added (so that value won't be an observee anymore). Note: only use collapse:true if the observees you're unioning isn't actually an object that inherits from an observee - any instance methods on the observee that come from child classes won't be accessible anymore.
 
 Example:
