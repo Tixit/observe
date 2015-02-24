@@ -63,9 +63,9 @@ observe; // proto.global.js defines proto globally
 ```
 
 
-`var observer = observe(obj)` - returns an observer object, which is an instance of [node.js's EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter). The `obj` argument can be any `Object` or `Array`. Note that even though this uses node.js's EventEmitter, it still works in the browser.
+**`var observer = observe(obj)`** - returns an observer object, which is an instance of [node.js's EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter). The `obj` argument can be any `Object` or `Array`. Note that even though this uses node.js's EventEmitter, it still works in the browser.
 
-`observer.subject` - the object being observed (same as the `obj` passed in)
+**`observer.subject`** - the object being observed (same as the `obj` passed in)
 
 `observer.set(property, value)` - Sets a value on the observer's subject and emits a `"set"` change event.
 * `property` - The propety to set, in dot notation (see below).
