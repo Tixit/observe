@@ -29,7 +29,7 @@ observer.on('change', function(change) {
 })
 
 observer.set('a', 2)             // prints "My 'a' property changed to: 2."
-observer.set('b.x', 'hi')        // prints "FINALLY someone sets my b.c property!"
+observer.set('b.x', 'hi')        // prints "FINALLY someone sets my b.x property!"
 observer.get('c').push(3, 4)     // prints "My c property got 2 new values: 3,4."
 observer.get('c').splice(0,1)    // prints "Someone took 3 from c!"
 observer.set('b.y', 'ho')        // prints "Well i just don't know *what's* going on with b.y."
