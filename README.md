@@ -125,7 +125,7 @@ The properties passed into `get` and `set` are passed in dot notation. Array ind
 Change Event
 ---------
 
-The change event comes through whenever an observer is used to `set`, `push`, or `splice` its subject. Listen to the `change` event using `observer.on` or any of the other standard [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) methods. The event has the following properties:
+The change event comes through whenever an observer is used to `set`, `push`, `splice`, or `append` on its subject. Listen to the `change` event using `observer.on` or any of the other standard [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) methods. The event has the following properties:
 
 * `type` - Either `"set"` (for value changes), `"added"` (for values added to an array), or `"removed"` (for values removed from an array).
 * `property` - An array of property parts. For example, the property "observer.subject.a.b.c" will be represented as `['a','b','c']` and the property "observer.subject.a[3].x" will be represented as `['a','3','x']
