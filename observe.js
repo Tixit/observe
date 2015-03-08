@@ -165,7 +165,7 @@ var ObserveeChild = proto(EventEmitter, function() {
     }
 
     this.splice = function(index, countToRemove/*[, elementsToAdd....]*/) {
-        spliceInternal(this._observeeParent, this.property, arguments, this.options)
+        return spliceInternal(this._observeeParent, this.property, arguments, this.options)
     }
 
     this.append = function(/*[property,] arrayToAppend*/) {

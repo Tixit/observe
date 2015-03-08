@@ -9,7 +9,7 @@ module.exports = function(t) {
 
     //*
     this.test('basic methods and events', function(t) {
-        this.count(11)
+        this.count(12)
 
         var obj = {a: 1, b:{}, c:[]}
         var subject = O(obj)
@@ -43,11 +43,14 @@ module.exports = function(t) {
         subject.get('c').append([3,2,1])
         this.ok(equal(obj.c, [4,3,2,1]))
 
-        subject.get('c').splice(1, 1, 99)
+        var splicedValues = subject.get('c').splice(1, 1, 99)
         this.ok(equal(obj.c, [4,99,2,1]), obj.c)
+        this.ok(equal(splicedValues, [3]))
     });
 
     this.test('array stuff', function(t) {
+        this.count(10)
+
         var array = []
         var subject = O(array)
 
@@ -75,8 +78,10 @@ module.exports = function(t) {
         subject.append([4,5,6])
         this.ok(equal(array, [3,4,5,6]))
 
-        subject.splice(1,2,'moo')
+        var splicedValues = subject.splice(1,2,'moo')
         this.ok(equal(array, [3,'moo',6]))
+        this.ok(equal(splicedValues, [4,5]))
+
     })
 
 
@@ -323,6 +328,17 @@ module.exports = function(t) {
         })
 
         this.test("ObserveeChild fails if the property changes location in the parent", function(t) {
+            var a = [{x:1},{x:2}]
+            var oa = O(a)
+
+            var one = oa.get(1)
+
+            oa.splice(0,1)
+            one.set('x',3)
+            this.eq(a[0].x, 3)
+        })
+
+        this.test("ObserveeChild splice doesn't return the spliced values", function(t) {
             var a = [{x:1},{x:2}]
             var oa = O(a)
 
