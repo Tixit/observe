@@ -130,7 +130,7 @@ The change event comes through whenever an observer is used to `set`, `push`, `s
 * `type` - Either `"set"` (for value changes), `"added"` (for values added to an array), or `"removed"` (for values removed from an array).
 * `index` - The array index at which values were added or removed. Only exists for `"added"` and `"removed"` events.
 * `count` - The number of elements added. Only exists for `"added"` events.
-* `values` - The list of values removed from an array. Only exists for `"removed"` events.
+* `removed` - The list of values removed from an array. Only exists for `type="removed"` events.
 
 Inheriting from observe
 -----------------------

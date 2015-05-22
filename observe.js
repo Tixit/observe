@@ -7,7 +7,7 @@ var utils = require("./utils")
     // change - the event data is an object of one of the following forms:
         // {id:_, type: 'set', property: propertyList}
         // {id:_, type: 'added', property: propertyList, index:_, count: numberOfElementsAdded}
-        // {id:_, type: 'removed', property: propertyList, index:_, values: removedValues}
+        // {id:_, type: 'removed', property: propertyList, index:_, removed: removedValues}
 var Observe = module.exports = proto(EventEmitter, function() {
 
     // static members
