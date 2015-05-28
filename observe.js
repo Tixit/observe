@@ -308,7 +308,7 @@ function unionizeList(array, start, count, union) {
 // internalObservees should be the result from `unionizeList`
 function unionizeListEvents(that, internalObservees, propertyList, collapse) {
     for(var n=0; n<internalObservees.length; n++) {
-        unionizeEvents(that, internalObservees[n].obj, propertyList.concat(internalObservees[n].index), collapse)
+        unionizeEvents(that, internalObservees[n].obj, propertyList.concat(internalObservees[n].index+''), collapse)
     }
 }
 
@@ -344,7 +344,13 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
     that.on('change', containerChangeHandler = function(change) {
         var changedPropertyDepth = change.property.length
 
-        var answers = changeQuestions(propertyList, change)
+        if(collapse) {
+            var propertyListToAskFor = propertyList
+        } else {
+            var propertyListToAskFor = propertyList.concat(['subject'])
+        }
+
+        var answers = changeQuestions(propertyListToAskFor, change)
         var changeIsWithinInnerProperty = answers.isWithin
         var changeCouldRelocateInnerProperty = answers.couldRelocate
 

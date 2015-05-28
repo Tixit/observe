@@ -170,6 +170,7 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.0.3 - Fixing bug: inner unioned objects weren't getting their change event called when a set was done on their container
 * 1.0.2 - Fixing bug: splice not returning removed values for ObserveeChild
 * 1.0.0 - Initial commit - code transferred from private project.
 

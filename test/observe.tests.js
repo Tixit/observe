@@ -349,6 +349,32 @@ module.exports = function(t) {
             this.eq(a[0].x, 3)
         })
 
+        this.test("inner unioned observees didn't get their change event fired when containing observee changed it", function(t) {
+            this.count(8)
+
+            var a = [], b = {x:1}, c={moo:1}
+            var oa = O(a), ob = O(b), oc=O(c)
+
+            ob.on('change', function(change) {
+                t.eq(change.property.length, 1)
+                t.eq(change.property[0], 'x')
+                t.eq(change.type, 'set')
+                t.eq(b.x, 2)
+            })
+            oc.on('change', function(change) {
+                t.eq(change.property.length, 1)
+                t.eq(change.property[0], 'moo')
+                t.eq(change.type, 'set')
+                t.eq(c.moo, 3)
+            })
+
+            oa.union().push(ob)
+            oa.union(true).push(oc)
+
+            oa.set("0.subject.x", 2)
+            oa.set("1.moo", 3)
+        })
+
     })
 
     //*/
