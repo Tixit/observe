@@ -87,14 +87,14 @@ var observer = observer({})
 
 var ignoreA = {}
 observer.on('change', function(change) {
-   if(id !== ignoreA) {
+   if(change.id !== ignoreA) {
       console.log("A")
    }
 })
 
 var ignoreB = {}
 observer.on('change', function(change) { // somewhere else...
-   if(id !== ignoreB) {
+   if(change.id !== ignoreB) {
       console.log("B")
    }
 })
@@ -131,6 +131,7 @@ The change event comes through whenever an observer is used to `set`, `push`, `s
 * `index` - The array index at which values were added or removed. Only exists for `"added"` and `"removed"` events.
 * `count` - The number of elements added. Only exists for `"added"` events.
 * `removed` - The list of values removed from an array. Only exists for `type="removed"` events.
+* `id` - The value set with the `id()` method (see above). Despite its name, can be used to pass any data.
 
 Inheriting from observe
 -----------------------
