@@ -127,11 +127,11 @@ Change Event
 
 The change event comes through whenever an observer is used to `set`, `push`, `splice`, or `append` on its subject. Listen to the `change` event using `observer.on` or any of the other standard [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) methods. The event has the following properties:
 
-* `type` - Either `"set"` (for value changes), `"added"` (for values added to an array), or `"removed"` (for values removed from an array).
-* `index` - The array index at which values were added or removed. Only exists for `"added"` and `"removed"` events.
-* `count` - The number of elements added. Only exists for `"added"` events.
-* `removed` - The list of values removed from an array. Only exists for `type="removed"` events.
-* `id` - The value set with the `id()` method (see above). Despite its name, can be used to pass any data.
+* **`type`** - Either `"set"` (for value changes), `"added"` (for values added to an array), or `"removed"` (for values removed from an array).
+* **`index`** - The array index at which values were added or removed. Only exists for `"added"` and `"removed"` events.
+* **`count`** - The number of elements added. Only exists for `"added"` events.
+* **`removed`** - The list of values removed from an array. Only exists for `type="removed"` events.
+* **`id`** - The value set with the `id()` method (see above). Despite its name, can be used to pass any data.
 
 Inheriting from observe
 -----------------------
