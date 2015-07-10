@@ -131,7 +131,7 @@ The change event comes through whenever an observer is used to `set`, `push`, `s
 * **`index`** - The array index at which values were added or removed. Only exists for `"added"` and `"removed"` events.
 * **`count`** - The number of elements added. Only exists for `"added"` events.
 * **`removed`** - The list of values removed from an array. Only exists for `type="removed"` events.
-* **`id`** - The value set with the `id()` method (see above). Despite its name, can be used to pass any data.
+* **`data`** - The value set with the `data()` method (see above). Despite its name, can be used to pass any data.
 
 Inheriting from observe
 -----------------------
@@ -171,6 +171,9 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.1.0
+    * Fixing bug: id wasn't working right when chained after a get
+    * Changing method name, and event property name, from 'id' to 'data'. The method 'id' and change event property 'id' can still be accessed, tho that name is deprecated now.
 * 1.0.3 - Fixing bug: inner unioned objects weren't getting their change event called when a set was done on their container
 * 1.0.2 - Fixing bug: splice not returning removed values for ObserveeChild
 * 1.0.0 - Initial commit - code transferred from private project.

@@ -103,7 +103,7 @@ module.exports = function(t) {
         subSubject.set('b', 6)
     })
 
-
+    // deprecated
     this.test('id', function(t) {
         this.count(4)
 
@@ -125,6 +125,28 @@ module.exports = function(t) {
         observee.id(1).set('a', [])
         observee.get('a').id(2).push(3)
         observee.get('a').id(3).set(1, 4)
+    })
+    this.test('data', function(t) {
+        this.count(4)
+
+        var obj = {}
+        var observee = O(obj)
+
+        var changeSequence = testUtils.sequence()
+        observee.on('change', function(change) {
+            changeSequence(function(){
+                t.eq(change.data, 1)
+            },function(){
+                t.eq(change.data, 2)
+            },function(){
+                t.eq(change.data, 3)
+                t.ok(equal(change.property, ['a','1']), change.property)
+            })
+        })
+
+        observee.data(1).set('a', [])
+        observee.get('a').data(2).push(3)
+        observee.get('a').data(3).set(1, 4)
     })
 
 
@@ -375,6 +397,19 @@ module.exports = function(t) {
             oa.set("1.moo", 3)
         })
 
+        this.test("ids weren't working when chained after a 'get'", function(t) {
+            var a = {b:{c:{d:3}}}
+            var oa = O(a)
+
+            oa.on('change', function(change) {
+                t.eq(change.id, 'whatever')
+                t.eq(change.type, 'set')
+                t.eq(a.b.c.d, 4)
+            })
+
+            var x = oa.get('b.c').id('whatever') // was causing an exception
+            x.set('d', 4)
+        })
     })
 
     //*/
