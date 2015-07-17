@@ -80,7 +80,10 @@ observe; // observe.global.js defines proto globally
 **`observer.get(property)`** - Returns a new observer for a property within the observer's subject. Any changes done to the returned observer will trigger events on the calling observer, but you can also set up an event listener on the returned observer.
 * `property` - The propety to get an observer for, in dot notation (see below).
 
-**`observer.data(value)`** - Returns a new observer that will include the passed value as the `data` property in change events caused by that observer. This can be useful if you need to ignore a change event in certain handlers but not other, or if you need to pass additional information. For example:
+**`observer.data(value)`** - Returns a new observer that will include the passed value as the `data` property in change events
+caused by that observer. This can be useful if you need to ignore a change event in certain handlers but not other, or if you want
+some way to know when an action caused by the change has been completed, or if you just need to pass some additional information.
+For example:
 
 ```javascript
 var observer = observer({})
@@ -131,7 +134,7 @@ The change event comes through whenever an observer is used to `set`, `push`, `s
 * **`index`** - The array index at which values were added or removed. Only exists for `"added"` and `"removed"` events.
 * **`count`** - The number of elements added. Only exists for `"added"` events.
 * **`removed`** - The list of values removed from an array. Only exists for `type="removed"` events.
-* **`data`** - The value set with the `data()` method (see above). Despite its name, can be used to pass any data.
+* **`data`** - The value set with the `data()` method (see above).
 
 Inheriting from observe
 -----------------------
