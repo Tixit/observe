@@ -39,7 +39,7 @@ observer.get('c').append([5,6,7])// prints "My c property got 3 new values: 5,6,
 
 Why not use `Object.observe`?
 =====================
-`Object.observe` is fantastic - if you live in the future! Attempts at polyfilling this simply aren't practical, because they have to use polling. Since this won't be practically usable until ECMAScript 7 is widespread, this module will do what you need almost as elegantly. Also, `Object.observe` doesn't have the `id` feature (see below).
+`Object.observe` is fantastic - if you live in the future! Attempts at polyfilling this simply aren't practical, because they have to use polling. Since this won't be practically usable until ECMAScript 7 is widespread, this module will do what you need almost as elegantly. Also, `Object.observe` doesn't have the `data` feature (see below).
 
 Install
 =======
@@ -80,26 +80,26 @@ observe; // observe.global.js defines proto globally
 **`observer.get(property)`** - Returns a new observer for a property within the observer's subject. Any changes done to the returned observer will trigger events on the calling observer, but you can also set up an event listener on the returned observer.
 * `property` - The propety to get an observer for, in dot notation (see below).
 
-**`observer.id(value)`** - Returns a new observer that will include the passed value as the `id` property in change events caused by that observer. This can be useful if you need to ignore a change event in certain handlers but not other, or if you need to pass additional information. For example:
+**`observer.data(value)`** - Returns a new observer that will include the passed value as the `data` property in change events caused by that observer. This can be useful if you need to ignore a change event in certain handlers but not other, or if you need to pass additional information. For example:
 
 ```javascript
 var observer = observer({})
 
 var ignoreA = {}
 observer.on('change', function(change) {
-   if(change.id !== ignoreA) {
+   if(change.data !== ignoreA) {
       console.log("A")
    }
 })
 
 var ignoreB = {}
 observer.on('change', function(change) { // somewhere else...
-   if(change.id !== ignoreB) {
+   if(change.data !== ignoreB) {
       console.log("B")
    }
 })
 
-observer.id(ignoreA).set('a', 1)  // prints "B", but not "A"
+observer.data(ignoreA).set('a', 1)  // prints "B", but not "A"
 
 ```
 
