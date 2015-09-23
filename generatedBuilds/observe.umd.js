@@ -6,9 +6,9 @@ var utils = require("./utils")
 
 // emits the event:
     // change - the event data is an object of one of the following forms:
-        // {id:_, type: 'set', property: propertyList}
-        // {id:_, type: 'added', property: propertyList, index:_, count: numberOfElementsAdded}
-        // {id:_, type: 'removed', property: propertyList, index:_, values: removedValues}
+        // {data:_, type: 'set', property: propertyList}
+        // {data:_, type: 'added', property: propertyList, index:_, count: numberOfElementsAdded}
+        // {data:_, type: 'removed', property: propertyList, index:_, removed: removedValues}
 var Observe = module.exports = proto(EventEmitter, function() {
 
     // static members
@@ -52,9 +52,8 @@ var Observe = module.exports = proto(EventEmitter, function() {
         appendInternal(this, [], arguments, {})
     }
 
-    this.id = function(id) {
-        return ObserveeChild(this, [], {id: id})
-        //return idFunction(this, [], id)
+    this.data = this.id = function(data) {
+        return ObserveeChild(this, [], {data: data})
     }
 
     // For the returned object, any property added via set, push, splice, or append joins an internal observee together with this observee, so that
@@ -166,16 +165,15 @@ var ObserveeChild = proto(EventEmitter, function() {
     }
 
     this.splice = function(index, countToRemove/*[, elementsToAdd....]*/) {
-        spliceInternal(this._observeeParent, this.property, arguments, this.options)
+        return spliceInternal(this._observeeParent, this.property, arguments, this.options)
     }
 
     this.append = function(/*[property,] arrayToAppend*/) {
         appendInternal(this._observeeParent, this.property, arguments, this.options)
     }
 
-    this.id = function(id) {
-        return ObserveeChild(this, this.property, utils.merge({}, this.options, {id: id}))
-        //return idFunction(this._observeeParent, this.property, id)
+    this.data = this.id = function(data) {
+        return ObserveeChild(this._observeeParent, this.property, utils.merge({}, this.options, {data: data}))
     }
 
     this.union = function(collapse) {
@@ -185,28 +183,7 @@ var ObserveeChild = proto(EventEmitter, function() {
 
 })
 
-     /*
-function idFunction(that, propertyList, id) {
-    var result = {
-        set: function(property, value) {
-            var fullPropertyList = propertyList.concat(parsePropertyList(property))
-            setInternal(that, fullPropertyList, value, id)
-        },
-        push: function() {
-            pushInternal(that, propertyList, arguments, id)
-        },
-        splice: function() {
-            spliceInternal(that, propertyList, arguments, id)
-        },
-        append: function() {
-            appendInternal(that, propertyList, arguments, id)
-        },
-        get: function() {
 
-        }
-    }
-}
-*/
 
 // that - the Observee object
 function setInternal(that, propertyList, value, options) {
@@ -220,7 +197,7 @@ function setInternal(that, propertyList, value, options) {
     pointer.obj[pointer.key] = value
 
     var event = {type: 'set', property: propertyList}
-    if(options.id !== undefined) event.id = options.id
+    if(options.data !== undefined) event.data = event.id = options.data
     that.emit('change',event)
 
     if(options.union !== undefined)
@@ -235,7 +212,7 @@ function pushInternal(that, propertyList, args, options) {
     var internalObservees = unionizeList(array, originalLength, args.length, options.union)
 
     var event = {type: 'added', property: propertyList, index: originalLength, count: 1}
-    if(options.id !== undefined) event.id = options.id
+    if(options.data !== undefined) event.data = event.id = options.data
     that.emit('change', event)
 
     unionizeListEvents(that, internalObservees, propertyList, options.union)
@@ -250,7 +227,7 @@ function spliceInternal(that, propertyList, args, options) {
 
     if(countToRemove > 0) {
         var event = {type: 'removed', property: propertyList, index: index, removed: result}
-        if(options.id !== undefined) event.id = options.id
+        if(options.data !== undefined) event.data = event.id = options.data
         that.emit('change', event)
     }
     if(args.length > 2) {
@@ -258,7 +235,7 @@ function spliceInternal(that, propertyList, args, options) {
 
         var internalObservees = unionizeList(array, index, event.count, options.union)
 
-        if(options.id !== undefined) event.id = options.id
+        if(options.data !== undefined) event.data = event.id = options.data
         that.emit('change', event)
 
         unionizeListEvents(that, internalObservees, propertyList, options.union)
@@ -283,7 +260,7 @@ function appendInternal(that, propertyList, args, options) {
     var internalObservees = unionizeList(array, oldLength, array.length, options.union)
 
     var event = {type: 'added', property: propertyList, index: originalLength, count: arrayToAppend.length}
-    if(options.id !== undefined) event.id = options.id
+    if(options.data !== undefined) event.data = event.id = options.data
     that.emit('change', event)
 
     unionizeListEvents(that, internalObservees, propertyList, options.union)
@@ -309,7 +286,7 @@ function unionizeList(array, start, count, union) {
 // internalObservees should be the result from `unionizeList`
 function unionizeListEvents(that, internalObservees, propertyList, collapse) {
     for(var n=0; n<internalObservees.length; n++) {
-        unionizeEvents(that, internalObservees[n].obj, propertyList.concat(internalObservees[n].index), collapse)
+        unionizeEvents(that, internalObservees[n].obj, propertyList.concat(internalObservees[n].index+''), collapse)
     }
 }
 
@@ -345,7 +322,13 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
     that.on('change', containerChangeHandler = function(change) {
         var changedPropertyDepth = change.property.length
 
-        var answers = changeQuestions(propertyList, change)
+        if(collapse) {
+            var propertyListToAskFor = propertyList
+        } else {
+            var propertyListToAskFor = propertyList.concat(['subject'])
+        }
+
+        var answers = changeQuestions(propertyListToAskFor, change)
         var changeIsWithinInnerProperty = answers.isWithin
         var changeCouldRelocateInnerProperty = answers.couldRelocate
 
@@ -407,7 +390,9 @@ function changeQuestions(propertyList, change) {
         }
     }
 
-    if(change.property.length <= propertyListDepth) {
+    if((change.type === 'set' && change.property.length <= propertyListDepth)
+        || (change.type !== 'set' && change.property.length < propertyListDepth)
+    ) {
         changeIsWithinInnerProperty = false
     } else {
         changeCouldRelocateInnerProperty = false

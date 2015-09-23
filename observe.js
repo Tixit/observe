@@ -389,7 +389,9 @@ function changeQuestions(propertyList, change) {
         }
     }
 
-    if(change.property.length <= propertyListDepth) {
+    if((change.type === 'set' && change.property.length <= propertyListDepth)
+        || (change.type !== 'set' && change.property.length < propertyListDepth)
+    ) {
         changeIsWithinInnerProperty = false
     } else {
         changeCouldRelocateInnerProperty = false

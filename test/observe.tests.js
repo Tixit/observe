@@ -410,6 +410,17 @@ module.exports = function(t) {
             var x = oa.get('b.c').id('whatever') // was causing an exception
             x.set('d', 4)
         })
+
+        this.test("events weren't working when you used get with child property", function (t) {
+            this.count(1)
+
+            var a = O({a:[]})
+            var thing = a.get("a")
+            thing.on('change', function() {
+                t.ok(true)
+            })
+            thing.push(3)
+        })
     })
 
     //*/
