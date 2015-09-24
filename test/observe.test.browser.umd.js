@@ -8992,7 +8992,10 @@ var ObserveeChild = proto(EventEmitter, function() {
             var answers = changeQuestions(that.property, change)
 
             if(answers.isWithin ) {
-                that.emit('change', {type:change.type, property: change.property.slice(that.property.length), index:change.index, count:change.count, removed: change.removed})
+                that.emit('change', {
+                    type:change.type, property: change.property.slice(that.property.length),
+                    index:change.index, count:change.count, removed: change.removed, data: change.data
+                })
             } else if(answers.couldRelocate) {
                 if(change.type === 'removed') {
                     var relevantIndex = that.property[change.property.length]
@@ -9358,7 +9361,7 @@ module.exports = function(t) {
             t.ok(equal(change, {type:'set', property: ['a', 'b']}), change)
         })
         subSubject.on('change', function(change) {
-            t.ok(equal(change, {type:'set', property: ['b'], index: undefined, count:undefined, removed: undefined}), change)
+            t.ok(equal(change, {type:'set', property: ['b'], index: undefined, count:undefined, removed: undefined, data: undefined}), change)
         })
 
         subject.set('a.b', 5)
@@ -9389,7 +9392,7 @@ module.exports = function(t) {
         observee.get('a').id(3).set(1, 4)
     })
     this.test('data', function(t) {
-        this.count(4)
+        this.count(7)
 
         var obj = {}
         var observee = O(obj)
@@ -9403,6 +9406,15 @@ module.exports = function(t) {
             },function(){
                 t.eq(change.data, 3)
                 t.ok(equal(change.property, ['a','1']), change.property)
+            })
+        })
+        var changeSequenceA = testUtils.sequence()
+        observee.get('a').on('change', function(change) {
+            changeSequenceA(function(){
+                t.eq(change.data, 2)
+            },function(){
+                t.eq(change.data, 3)
+                t.ok(equal(change.property, ['1']), change.property)
             })
         })
 

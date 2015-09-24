@@ -133,7 +133,10 @@ var ObserveeChild = proto(EventEmitter, function() {
             var answers = changeQuestions(that.property, change)
 
             if(answers.isWithin ) {
-                that.emit('change', {type:change.type, property: change.property.slice(that.property.length), index:change.index, count:change.count, removed: change.removed})
+                that.emit('change', {
+                    type:change.type, property: change.property.slice(that.property.length),
+                    index:change.index, count:change.count, removed: change.removed, data: change.data
+                })
             } else if(answers.couldRelocate) {
                 if(change.type === 'removed') {
                     var relevantIndex = that.property[change.property.length]

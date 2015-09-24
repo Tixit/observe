@@ -174,6 +174,7 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.1.2 - fixing bug where the change event data/id wasn't coming through for child observees
 * 1.1.1 - fixing bug where change event wasn't properly being called for a pull or splice call on a child observee
 * 1.1.0
     * Fixing bug: id wasn't working right when chained after a get
