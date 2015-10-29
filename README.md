@@ -67,18 +67,14 @@ observe; // observe.global.js defines proto globally
 
 **`observer.subject`** - the object being observed (same as the `obj` passed in)
 
+**`observer.get(property)`** - Returns a new observer for a property within the observer's subject. Any changes done to the returned observer will trigger events on the calling observer, but you can also set up an event listener on the returned observer.
+* `property` - The propety to get an observer for, in dot notation (see below).
+
 **`observer.set(property, value)`** - Sets a value on the observer's subject and emits a `"set"` change event.
 * `property` - The propety to set, in dot notation (see below).
 * `value` - The value to set on that property.
 
-**`observer.push(...)`** - Your standard javascript `push` method. Also emits an `"added" change event.
-
-**`observer.splice(...)`** - Your standard javascript `splice` method. Can emit a `"removed"` change event, then an `"added"` change event (only emits both if values are both added *and* removed).
-
-**`observer.append(...)`** - Slightly optimized shorthand for `observer.slice(observer.subject.length,0,...)`.
-
-**`observer.get(property)`** - Returns a new observer for a property within the observer's subject. Any changes done to the returned observer will trigger events on the calling observer, but you can also set up an event listener on the returned observer.
-* `property` - The propety to get an observer for, in dot notation (see below).
+**`observer.append(...)`** - Slightly optimized shorthand for `observer.splice(observer.subject.length,0,...)`.
 
 **`observer.data(value)`** - Returns a new observer that will include the passed value as the `data` property in change events
 caused by that observer. This can be useful if you need to ignore a change event in certain handlers but not other, or if you want
@@ -119,6 +115,22 @@ b.union(true).set('x', x)
 b.subject.x.a === 5            ;; true
 b.subject.x.subject.a === 5    ;; false
 ```
+
+### Standard Array Mutator Methods
+
+All the standard Array mutator methods are supported by observe:
+
+**`observer.splice(...)`** - Can emit a `"removed"` change event, then an `"added"` change event (only emits both if values are both added *and* removed).
+
+**`observer.push(...)`** - Also emits an `"added" change event.
+
+**`observer.pop()`** - Emits a `"removed"` change event.
+
+**`observer.shift()`** - Emits a `"removed"` change event.
+
+**`observer.unshift(...)`** - Emits an `"added"` change event.
+
+**`observer.reverse()`** - Emits a `"set"` change event.
 
 Dot notation
 ------------
@@ -174,6 +186,7 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.2.0 - Adding support for pop, unshift, shift, and reverse
 * 1.1.3 - fixing issues with the demo code in the readme and fixed a bug where `push` wasn't able to push multiple items - https://github.com/Tixit/observe/issues/2
 * 1.1.2 - fixing bug where the change event data/id wasn't coming through for child observees
 * 1.1.1 - fixing bug where change event wasn't properly being called for a pull or splice call on a child observee

@@ -9,43 +9,179 @@ module.exports = function(t) {
 
     //*
     this.test('basic methods and events', function(t) {
-        this.count(12)
+        this.test("basic set, get, push, append, and splice", function(t) {
+            this.count(12)
 
-        var obj = {a: 1, b:{}, c:[]}
-        var subject = O(obj)
+            var obj = {a: 1, b:{}, c:[]}
+            var subject = O(obj)
 
-        var changeSequence = testUtils.sequence()
-        subject.on('change', function(change) {
-            changeSequence(function(){
-                t.ok(equal(change, {type: 'set', property:['a']}), change)
-            },function(){
-                t.ok(equal(change, {type: 'set', property:['b', 'x']}), change)
-            },function(){
-                t.ok(equal(change, {type: 'added', property:['c'], index: 0, count:1}), change)
-            },function(){
-                t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:3}), change)
-            },function() {
-                t.ok(equal(change, {type: 'removed', property:['c'], index: 1, removed:[3]}), change)
-            }, function() {
-                t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:1}), change)
+            var changeSequence = testUtils.sequence()
+            subject.on('change', function(change) {
+                changeSequence(function(){
+                    t.ok(equal(change, {type: 'set', property:['a']}), change)
+                },function(){
+                    t.ok(equal(change, {type: 'set', property:['b', 'x']}), change)
+                },function(){
+                    t.ok(equal(change, {type: 'added', property:['c'], index: 0, count:1}), change)
+                },function(){
+                    t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:3}), change)
+                },function() {
+                    t.ok(equal(change, {type: 'removed', property:['c'], index: 1, removed:[3]}), change)
+                }, function() {
+                    t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:1}), change)
+                })
+            })
+
+            subject.set('a', 5)
+            this.eq(obj.a, 5)
+
+            subject.set('b.x', 12)
+            this.eq(obj.b.x, 12)
+
+            subject.get('c').push(4)
+            this.ok(equal(obj.c, [4]))
+
+            subject.get('c').append([3,2,1])
+            this.ok(equal(obj.c, [4,3,2,1]))
+
+            var splicedValues = subject.get('c').splice(1, 1, 99)
+            this.ok(equal(obj.c, [4,99,2,1]), obj.c)
+            this.ok(equal(splicedValues, [3]))
+        })
+
+        this.test("pop", function() {
+            this.test("pop - regular", function(t) {
+                this.count(3)
+
+                var subject = [1,2,3]
+                var obs = O(subject)
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'removed', property: [], index:2, removed: [3]}), change)
+                })
+
+                t.eq(obs.pop(), 3)
+                t.ok(equal(obs.subject, [1,2]))
+            })
+
+            this.test("pop - observee child", function(t) {
+                this.count(3)
+
+                var subject = {a:[1,2,3]}
+                var obs = O(subject).get('a')
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'removed', property: [], index:2, removed: [3], count:undefined,data:undefined}), change)
+                })
+
+                t.eq(obs.pop(), 3)
+                t.ok(equal(obs.subject, [1,2]))
             })
         })
 
-        subject.set('a', 5)
-        this.eq(obj.a, 5)
+        this.test("shift and unshift", function() {
+            this.test("regular", function(t) {
+                this.count(13)
 
-        subject.set('b.x', 12)
-        this.eq(obj.b.x, 12)
+                var subject = []
+                var obs = O(subject)
 
-        subject.get('c').push(4)
-        this.ok(equal(obj.c, [4]))
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:1}), change)
+                    },function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:2}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[3]}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[4]}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[5]}), change)
+                    })
+                })
 
-        subject.get('c').append([3,2,1])
-        this.ok(equal(obj.c, [4,3,2,1]))
+                obs.unshift(5)
+                t.ok(equal(subject, [5]), subject)
 
-        var splicedValues = subject.get('c').splice(1, 1, 99)
-        this.ok(equal(obj.c, [4,99,2,1]), obj.c)
-        this.ok(equal(splicedValues, [3]))
+                obs.unshift(3,4)
+                t.ok(equal(subject, [3,4,5]), subject)
+
+                t.eq(obs.shift(), 3)
+                t.ok(equal(obs.subject, [4,5]), subject)
+                t.eq(obs.shift(), 4)
+                t.ok(equal(obs.subject, [5]))
+                t.eq(obs.shift(), 5)
+                t.ok(equal(obs.subject, []))
+            })
+
+            this.test("shift and unshift - observee child", function(t) {
+                this.count(13)
+
+                var subject = {a:[]}
+                var obs = O(subject).get('a')
+
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:1, removed:undefined,data:undefined}), change)
+                    },function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:2, removed:undefined,data:undefined}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[3], count:undefined,data:undefined}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[4], count:undefined,data:undefined}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[5], count:undefined,data:undefined}), change)
+                    })
+                })
+
+                obs.unshift(5)
+                t.ok(equal(subject.a, [5]), subject.a)
+
+                obs.unshift(3,4)
+                t.ok(equal(subject.a, [3,4,5]), subject.a)
+
+                t.eq(obs.shift(), 3)
+                t.ok(equal(obs.subject, [4,5]), subject.a)
+                t.eq(obs.shift(), 4)
+                t.ok(equal(obs.subject, [5]))
+                t.eq(obs.shift(), 5)
+                t.ok(equal(obs.subject, []))
+            })
+        })
+
+        this.test("reverse", function() {
+            this.test("regular", function(t) {
+                this.count(2)
+
+                var subject = [1,2,3]
+                var obs = O(subject)
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'set', property: []}), change)
+                })
+
+                obs.reverse()
+                t.ok(equal(subject, [3,2,1]))
+            })
+            this.test("reverse - observee child", function(t) {
+                this.count(2)
+
+                var subject = {a:[1,2,3]}
+                var obs = O(subject).get('a')
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'set', property: []}), change)
+                })
+
+                obs.reverse()
+                t.ok(equal(subject.a, [3,2,1]))
+            })
+        })
+
+//
+//**`observer.reverse()`** - Emits a `"set"` change event.
     });
 
     this.test('array stuff', function(t) {

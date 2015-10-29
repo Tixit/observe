@@ -38,6 +38,26 @@ var Observe = module.exports = proto(EventEmitter, function() {
         pushInternal(this, [], arguments, {})
     }
 
+    this.pop = function() {
+        var elements = spliceInternal(this, [], [this.subject.length-1,1], {})
+        return elements[0]
+    }
+
+    this.unshift = function(/*value...*/) {
+        console.log(arguments+' and '+[0,0].concat(Array.prototype.slice.call(arguments, 0)))
+        spliceInternal(this, [], [0,0].concat(Array.prototype.slice.call(arguments, 0)), {})
+    }
+    this.shift = function() {
+        var elements = spliceInternal(this, [], [0,1], {})
+        return elements[0]
+    }
+
+    this.reverse = function() {
+        this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
 
     // index is the index to remove/insert at
     // countToRemove is the number to remove
@@ -165,9 +185,29 @@ var ObserveeChild = proto(EventEmitter, function() {
     this.push = function(/*values...*/) {
         pushInternal(this._observeeParent, this.property, arguments, this.options)
     }
+    this.pop = function() {
+        var elements = spliceInternal(this._observeeParent, this.property, [this.subject.length-1,1], this.options)
+        return elements[0]
+    }
+
+    this.unshift = function(/*value...*/) {
+        console.log(arguments+' ->>> '+[0,0].concat(Array.prototype.slice.call(arguments,0)))
+        spliceInternal(this._observeeParent, this.property, [0,0].concat(Array.prototype.slice.call(arguments,0)), this.options)
+    }
+    this.shift = function() {
+        var elements = spliceInternal(this._observeeParent, this.property, [0,1], this.options)
+        return elements[0]
+    }
 
     this.splice = function(index, countToRemove/*[, elementsToAdd....]*/) {
         return spliceInternal(this._observeeParent, this.property, arguments, this.options)
+    }
+
+    this.reverse = function() {
+        this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
     }
 
     this.append = function(/*[property,] arrayToAppend*/) {
