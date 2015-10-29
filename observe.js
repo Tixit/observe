@@ -213,7 +213,7 @@ function pushInternal(that, propertyList, args, options) {
 
     var internalObservees = unionizeList(array, originalLength, args.length, options.union)
 
-    var event = {type: 'added', property: propertyList, index: originalLength, count: 1}
+    var event = {type: 'added', property: propertyList, index: originalLength, count: args.length}
     if(options.data !== undefined) event.data = event.id = options.data
     that.emit('change', event)
 
@@ -257,6 +257,7 @@ function appendInternal(that, propertyList, args, options) {
     var spliceArgs = [originalLength, 0]
     spliceArgs = spliceArgs.concat(arrayToAppend)
     var oldLength = array.length
+    console.log("array.splice("+spliceArgs+")")
     array.splice.apply(array, spliceArgs)
 
     var internalObservees = unionizeList(array, oldLength, array.length, options.union)

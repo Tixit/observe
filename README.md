@@ -17,10 +17,10 @@ observer.on('change', function(change) {
       console.log("My 'a' property changed to: "+observer.subject.a + '.')
    } else if(change.property[0] === 'b' && change.property[1] === 'x') {
       console.log("FINALLY someone sets my b.x property!")
-   } else if(change.property[0] === 'c' change.type === 'added') {
+   } else if(change.property[0] === 'c' && change.type === 'added') {
       var s = change.count>1 ? 's' : '' // plural
-      console.log("My c property got "+change.count+" new value"+s+": "+observer.subject.slice(change.index, change.count) +'.'
-   } else if(change.property[0] === 'c' change.type === 'removed') {
+      console.log("My c property got "+change.count+" new value"+s+": "+observer.subject.c.slice(change.index, change.index+change.count) +'.')
+   } else if(change.property[0] === 'c' && change.type === 'removed') {
       var s = change.count>1 ? 's' : '' // plural
       console.log("Someone took "+change.removed+" from c!")
    } else {
@@ -174,6 +174,7 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.1.3 - fixing issues with the demo code in the readme and fixed a bug where `push` wasn't able to push multiple items - https://github.com/Tixit/observe/issues/2
 * 1.1.2 - fixing bug where the change event data/id wasn't coming through for child observees
 * 1.1.1 - fixing bug where change event wasn't properly being called for a pull or splice call on a child observee
 * 1.1.0

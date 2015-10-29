@@ -304,6 +304,64 @@ module.exports = function(t) {
 
     })
 
+    // testing the demo in the readme
+    this.test("demo", function(t) {
+        this.count(13)
+        var observe = O
+
+        var eventSequence = testUtils.sequence()
+        var event = function(event) {
+            eventSequence(function() {
+                t.eq(event, "My 'a' property changed to: 2.")
+                t.eq(object.a, 2)
+            },function() {
+                t.eq(event, "FINALLY someone sets my b.x property!")
+                t.eq(object.b.x, 'hi')
+                t.eq(Object.keys(object.b).length, 1)
+            },function() {
+                t.eq(event, "My c property got 2 new values: 3,4.")
+                t.ok(equal(object.c, [3,4]))
+            },function() {
+                t.eq(event, "Someone took 3 from c!")
+                t.ok(equal(object.c, [4]))
+            },function() {
+                t.eq(event, "Well i just don't know *what's* going on with b.y.")
+                t.eq(object.b.y, 'ho')
+            },function() {
+                t.eq(event, "My c property got 3 new values: 5,6,7.")
+                t.ok(equal(object.c, [4,5,6,7]))
+            })
+        }
+
+        // demo starts here
+
+        var object = {a:1, b:{}, c:[]}
+        var observer = observe(object)
+
+        observer.on('change', function(change) {
+           if(change.property[0] === 'a') {
+              event("My 'a' property changed to: "+observer.subject.a + '.')
+           } else if(change.property[0] === 'b' && change.property[1] === 'x') {
+              event("FINALLY someone sets my b.x property!")
+           } else if(change.property[0] === 'c' && change.type === 'added') {
+              var s = change.count>1 ? 's' : '' // plural
+              event("My c property got "+change.count+" new value"+s+": "+observer.subject.c.slice(change.index, change.index+change.count) +'.')
+           } else if(change.property[0] === 'c' && change.type === 'removed') {
+              var s = change.count>1 ? 's' : '' // plural
+              event("Someone took "+change.removed+" from c!")
+           } else {
+              event("Well i just don't know *what's* going on with "+change.property.join('.') +".")
+           }
+        })
+
+        observer.set('a', 2)             // prints "My 'a' property changed to: 2."
+        observer.set('b.x', 'hi')        // prints "FINALLY someone sets my b.x property!"
+        observer.get('c').push(3, 4)     // prints "My c property got 2 new values: 3,4."
+        observer.get('c').splice(0,1)    // prints "Someone took 3 from c!"
+        observer.set('b.y', 'ho')        // prints "Well i just don't know *what's* going on with b.y."
+        observer.get('c').append([5,6,7])// prints "My c property got 3 new values: 5,6,7."
+    })
+
     this.test('former bugs', function() {
         this.test("union push on array with 1 or more elements didn't correctly setup change event handlers", function(t) {
             this.count(2)
