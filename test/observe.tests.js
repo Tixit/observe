@@ -180,6 +180,55 @@ module.exports = function(t) {
             })
         })
 
+        this.test("sort", function() {
+            this.test("regular", function(t) {
+                this.count(4)
+
+                var subject = [1,3,2]
+                var obs = O(subject)
+
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    },function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    })
+                })
+
+                obs.sort(function(a,b) {
+                    return b-a // reverse sort
+                })
+                t.ok(equal(subject, [3,2,1]))
+
+                obs.sort()
+                t.ok(equal(subject, [1,2,3]))
+            })
+            this.test("sort - observee child", function(t) {
+                this.count(4)
+
+                var subject = {a:[1,2,3]}
+                var obs = O(subject).get('a')
+
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    },function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    })
+                })
+
+                obs.sort(function(a,b) {
+                    return b-a // reverse sort
+                })
+                t.ok(equal(subject.a, [3,2,1]))
+
+                obs.sort()
+                t.ok(equal(subject.a, [1,2,3]))
+            })
+        })
+
 //
 //**`observer.reverse()`** - Emits a `"set"` change event.
     });

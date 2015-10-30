@@ -44,7 +44,6 @@ var Observe = module.exports = proto(EventEmitter, function() {
     }
 
     this.unshift = function(/*value...*/) {
-        console.log(arguments+' and '+[0,0].concat(Array.prototype.slice.call(arguments, 0)))
         spliceInternal(this, [], [0,0].concat(Array.prototype.slice.call(arguments, 0)), {})
     }
     this.shift = function() {
@@ -54,6 +53,13 @@ var Observe = module.exports = proto(EventEmitter, function() {
 
     this.reverse = function() {
         this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
+
+    this.sort = function() {
+        this.subject.sort.apply(this.subject, arguments)
         this.emit('change', {
             type:'set', property: []
         })
@@ -191,7 +197,6 @@ var ObserveeChild = proto(EventEmitter, function() {
     }
 
     this.unshift = function(/*value...*/) {
-        console.log(arguments+' ->>> '+[0,0].concat(Array.prototype.slice.call(arguments,0)))
         spliceInternal(this._observeeParent, this.property, [0,0].concat(Array.prototype.slice.call(arguments,0)), this.options)
     }
     this.shift = function() {
@@ -205,6 +210,13 @@ var ObserveeChild = proto(EventEmitter, function() {
 
     this.reverse = function() {
         this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
+
+    this.sort = function() {
+        this.subject.sort.apply(this.subject, arguments)
         this.emit('change', {
             type:'set', property: []
         })
@@ -297,7 +309,6 @@ function appendInternal(that, propertyList, args, options) {
     var spliceArgs = [originalLength, 0]
     spliceArgs = spliceArgs.concat(arrayToAppend)
     var oldLength = array.length
-    console.log("array.splice("+spliceArgs+")")
     array.splice.apply(array, spliceArgs)
 
     var internalObservees = unionizeList(array, oldLength, array.length, options.union)

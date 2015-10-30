@@ -186,6 +186,7 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.2.1 - Adding support for sort
 * 1.2.0 - Adding support for pop, unshift, shift, and reverse
 * 1.1.3 - fixing issues with the demo code in the readme and fixed a bug where `push` wasn't able to push multiple items - https://github.com/Tixit/observe/issues/2
 * 1.1.2 - fixing bug where the change event data/id wasn't coming through for child observees
