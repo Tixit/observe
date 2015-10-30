@@ -156,7 +156,7 @@ The change event comes through whenever an observer is used to `set`, `push`, `s
 Inheriting from observe
 -----------------------
 
-So while observe is usually used a a function, it's actually an object constructor. You can inherit from `observe` just like you might inherit from  any other object in javascript. Instances created from a constructor who's parent is `observe` will have all the methods above. For example:
+So while observe is usually used as a function, it's actually an object constructor. You can inherit from `observe` just like you might inherit from  any other object in javascript. Instances created from a constructor who's parent is `observe` will have all the methods above. For example:
 
 ```javascript
 var SpecialObserver = function() {
