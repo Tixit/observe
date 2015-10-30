@@ -62,7 +62,6 @@ observe; // observe.global.js defines proto globally
        // if you really  want to shun module-based design
 ```
 
-
 **`var observer = observe(obj)`** - returns an observer object, which is an instance of [node.js's EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter). The `obj` argument can be any `Object` or `Array`. Note that even though this uses node.js's EventEmitter, it still works in the browser.
 
 **`observer.subject`** - the object being observed (same as the `obj` passed in)
@@ -73,6 +72,27 @@ observe; // observe.global.js defines proto globally
 **`observer.set(property, value)`** - Sets a value on the observer's subject and emits a `"set"` change event.
 * `property` - The propety to set, in dot notation (see below).
 * `value` - The value to set on that property.
+
+
+### Standard Array Mutator Methods
+
+All the standard Array mutator methods are supported by observe:
+
+**`observer.splice(...)`** - Can emit a `"removed"` change event, then an `"added"` change event (only emits both if values are both added *and* removed).
+
+**`observer.push(...)`** - Also emits an `"added" change event.
+
+**`observer.pop()`** - Emits a `"removed"` change event.
+
+**`observer.shift()`** - Emits a `"removed"` change event.
+
+**`observer.unshift(...)`** - Emits an `"added"` change event.
+
+**`observer.sort(...)`** - Emits a `"set"` change event.
+
+**`observer.reverse()`** - Emits a `"set"` change event.
+
+### Other methods
 
 **`observer.append(...)`** - Slightly optimized shorthand for `observer.splice(observer.subject.length,0,...)`.
 
@@ -116,21 +136,6 @@ b.subject.x.a === 5            ;; true
 b.subject.x.subject.a === 5    ;; false
 ```
 
-### Standard Array Mutator Methods
-
-All the standard Array mutator methods are supported by observe:
-
-**`observer.splice(...)`** - Can emit a `"removed"` change event, then an `"added"` change event (only emits both if values are both added *and* removed).
-
-**`observer.push(...)`** - Also emits an `"added" change event.
-
-**`observer.pop()`** - Emits a `"removed"` change event.
-
-**`observer.shift()`** - Emits a `"removed"` change event.
-
-**`observer.unshift(...)`** - Emits an `"added"` change event.
-
-**`observer.reverse()`** - Emits a `"set"` change event.
 
 Dot notation
 ------------
