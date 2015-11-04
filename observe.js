@@ -157,7 +157,7 @@ var ObserveeChild = proto(EventEmitter, function() {
         parent.on('change', function(change) {
             var answers = changeQuestions(that.property, change, that.options.union)
 
-            if(change.property.length <= that.property.length && that.options.union === undefined) {    // if the subject may have been replaced with a new subject
+            if(change.type === 'set' && change.property.length <= that.property.length && that.options.union === undefined) {    // if the subject may have been replaced with a new subject
                 that.subject = getPropertyValue(parent.subject, propertyList)
             }
 
