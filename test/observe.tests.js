@@ -9,9 +9,6 @@ module.exports = function(t) {
 
 
 
-
-
-
     //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
@@ -722,6 +719,13 @@ module.exports = function(t) {
             var a = O([{x:1}])
             var thing = a.get("0.x")
             a.splice(0,1)
+        })
+
+        this.test("ObserveeChild exception after that child is removed and then a sibling value is set", function (t) {
+            var a = O([{x:1},{x:2}])
+            var thing = a.get("1.x")
+            a.splice(1,1)
+            a.set('0.x', 2)
         })
     })
 

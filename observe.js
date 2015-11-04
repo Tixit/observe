@@ -158,7 +158,15 @@ var ObserveeChild = proto(EventEmitter, function() {
             var answers = changeQuestions(that.property, change, that.options.union)
 
             if(change.type === 'set' && change.property.length <= that.property.length && that.options.union === undefined) {    // if the subject may have been replaced with a new subject
-                that.subject = getPropertyValue(parent.subject, propertyList)
+                //getPropertyValue(parent.subject, propertyList)
+                var pointer = getPropertyPointer(parent.subject, propertyList)
+                if(pointer.obj !== undefined) {
+                    if(pointer.key !== undefined) {
+                        that.subject =pointer.obj[pointer.key]
+                    } else {
+                        that.subject =pointer.obj
+                    }
+                }
             }
 
             if(answers.isWithin) {
