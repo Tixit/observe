@@ -7,16 +7,20 @@ exports.equal = function(a,b) {
         if(a.length !== b.length) {
             return false
         } else {
-            return a.reduce(function(previousValue, currentValue, index) {
-                return previousValue && exports.equal(currentValue,b[index])
-            }, true)
+            for(var n=0; n<a.length; n++) {
+                if(!exports.equal(a[n],b[n])) {
+                    return false
+                }
+            }
+            // else
+            return true
         }
     } else if(a instanceof Object) {
         if(!(b instanceof Object))
             return false
 
-        var aKeys = Object.keys(a)
-        var bKeys = Object.keys(b)
+        var aKeys = getKeys(a)
+        var bKeys = getKeys(b)
 
         if(aKeys.length !== bKeys.length) {
             return false
@@ -34,8 +38,20 @@ exports.equal = function(a,b) {
             return true
         }
     } else {
-        return a===b
+        return a===b || Number.isNaN(a) && Number.isNaN(b)
     }
+}
+
+// counts object keys ignoring properties that are undefined
+function getKeys(x) {
+    var keys=[]
+    for(var k in x) {
+        if(x[k] !== undefined) {
+            keys.push(k)
+        }
+    }
+
+    return keys
 }
 
 // returns a function that should be passed a bunch of functions as its arguments

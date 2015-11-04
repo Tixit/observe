@@ -155,9 +155,13 @@ var ObserveeChild = proto(EventEmitter, function() {
 
         var that = this
         parent.on('change', function(change) {
-            var answers = changeQuestions(that.property, change)
+            var answers = changeQuestions(that.property, change, that.options.union)
 
-            if(answers.isWithin ) {
+            if(change.property.length <= that.property.length && that.options.union === undefined) {    // if the subject may have been replaced with a new subject
+                that.subject = getPropertyValue(parent.subject, propertyList)
+            }
+
+            if(answers.isWithin) {
                 that.emit('change', {
                     type:change.type, property: change.property.slice(that.property.length),
                     index:change.index, count:change.count, removed: change.removed, data: change.data
@@ -382,7 +386,7 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
             var propertyListToAskFor = propertyList.concat(['subject'])
         }
 
-        var answers = changeQuestions(propertyListToAskFor, change)
+        var answers = changeQuestions(propertyListToAskFor, change, true)
         var changeIsWithinInnerProperty = answers.isWithin
         var changeCouldRelocateInnerProperty = answers.couldRelocate
 
@@ -430,8 +434,9 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
     // isWithin: _,           // true if changeIsWithinInnerProperty
     // couldRelocate: _       // true if changeCouldRelocateInnerProperty or if innerProperty might be removed
 // }
-function changeQuestions(propertyList, change) {
+function changeQuestions(propertyList, change, union) {
     var propertyListDepth = propertyList.length
+    var unioned = union!==undefined
 
     var changeIsWithinInnerProperty = true // assume true until proven otherwise
     var changeCouldRelocateInnerProperty = true // assume true until prove otherwise
@@ -444,8 +449,9 @@ function changeQuestions(propertyList, change) {
         }
     }
 
-    if((change.type === 'set' && change.property.length <= propertyListDepth)
-        || (change.type !== 'set' && change.property.length < propertyListDepth)
+    if(!unioned && change.property.length < propertyListDepth
+       || unioned && (change.type === 'set' && change.property.length <= propertyListDepth   // if this is a unioned observee, replacing it actually removes it
+                   || change.type !== 'set' && change.property.length < propertyListDepth)
     ) {
         changeIsWithinInnerProperty = false
     } else {

@@ -7,6 +7,9 @@ var O = require("../observe")
 module.exports = function(t) {
 
 
+
+
+
     //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
@@ -288,6 +291,43 @@ module.exports = function(t) {
         subSubject.set('b', 6)
     })
 
+    this.test('get - complex', function(t) {
+        this.count(12)
+
+        var obj = {a:[{b:1}]}
+        var subject = O(obj)
+        var subSubject = subject.get('a.0.b')
+
+        var subjectSequence = testUtils.sequence()
+        subject.on('change', function(change) {
+            subjectSequence(function(){
+                t.ok(equal(change, {type:'set', property: ['a','0','b']}), change)
+                t.eq(subject.subject.a[0].b, 2)
+                t.eq(subSubject.subject, 2)
+            }, function() {
+                t.ok(equal(change, {type:'set', property: ['a','0','b']}), change)
+                t.eq(subject.subject.a[0].b, 3)
+                t.eq(subSubject.subject, 3)
+            })
+        })
+
+        var subSubjectSequence = testUtils.sequence()
+        subSubject.on('change', function(change) {
+            subSubjectSequence(function(){
+                t.ok(equal(change, {type:'set', property: []}), change)
+                t.eq(subject.subject.a[0].b, 2)
+                t.eq(subSubject.subject, 2)
+            }, function() {
+                t.ok(equal(change, {type:'set', property: []}), change)
+                t.eq(subject.subject.a[0].b, 3)
+                t.eq(subSubject.subject, 3)
+            })
+        })
+
+        subject.set('a.0.b', 2)
+        subSubject.set([], 3)
+    })
+
     // deprecated
     this.test('id', function(t) {
         this.count(4)
@@ -312,7 +352,7 @@ module.exports = function(t) {
         observee.get('a').id(3).set(1, 4)
     })
     this.test('data', function(t) {
-        this.count(7)
+        this.count(8)
 
         var obj = {}
         var observee = O(obj)
@@ -331,6 +371,8 @@ module.exports = function(t) {
         var changeSequenceA = testUtils.sequence()
         observee.get('a').on('change', function(change) {
             changeSequenceA(function(){
+                t.eq(change.data, 1)
+            },function(){
                 t.eq(change.data, 2)
             },function(){
                 t.eq(change.data, 3)
