@@ -191,6 +191,7 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.3.3 - Fixing bug where ObserveeChild objects pointing to an array element stopped getting the correct events after an element was inserted in front of it
 * 1.3.2 - Fixing bug where an exception was thrown if an ObserveeChild was removed, and then a sibling ObserveeChild was set
 * 1.3.1 - Fixing bug where an exception was thrown if an ObserveeChild was at least a grandchild property of a property that got removed
 * 1.3.0 - Allowing ChildObservees to get direct changes to their subject, as long as they're not a unioned observee

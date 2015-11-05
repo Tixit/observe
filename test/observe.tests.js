@@ -9,7 +9,20 @@ module.exports = function(t) {
 
 
 
-    //*
+        this.test("ObserveeChild not pointing to correct subject after inserts at it index", function (t) {
+            this.count(1)
+
+            var a = O([1,2])
+            var thing = a.get("1")
+            thing.on('change', function(change) {
+                t.eq(thing.subject,2.1)
+            })
+
+            a.splice(1,0,1.5)
+            a.set(2, 2.1)
+        })
+
+    /*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
             this.count(12)
@@ -726,6 +739,19 @@ module.exports = function(t) {
             var thing = a.get("1.x")
             a.splice(1,1)
             a.set('0.x', 2)
+        })
+
+        this.test("ObserveeChild not pointing to correct subject after inserts at it index", function (t) {
+            this.count(1)
+
+            var a = O([1,2])
+            var thing = a.get("1")
+            a.splice(1,0,1.5)
+            a.set(2, 2.1)
+
+            thing.on('change', function(change) {
+                t.eq(thing.subject,2.1)
+            })
         })
     })
 

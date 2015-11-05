@@ -183,8 +183,8 @@ var ObserveeChild = proto(EventEmitter, function() {
                         that.property[change.property.length] = relevantIndex - change.removed.length // change the propertyList to match the new index
                     }
                 } else if(change.type === 'added') {
-                    var relevantIndex = that.property[change.property.length]
-                    if(change.index < relevantIndex) {
+                    var relevantIndex = parseInt(that.property[change.property.length])
+                    if(change.index <= relevantIndex) {
                         that.property[change.property.length] = relevantIndex + change.count // change the propertyList to match the new index
                     }
                 }
@@ -449,7 +449,7 @@ function changeQuestions(propertyList, change, union) {
     var changeIsWithinInnerProperty = true // assume true until proven otherwise
     var changeCouldRelocateInnerProperty = true // assume true until prove otherwise
     for(var n=0; n<propertyListDepth; n++) {
-        if(change.property[n] !== propertyList[n]) {
+        if(parseInt(change.property[n]) !== propertyList[n]) {
             changeIsWithinInnerProperty = false
             if(n<change.property.length) {
                 changeCouldRelocateInnerProperty = false
