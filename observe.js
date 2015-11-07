@@ -449,7 +449,7 @@ function changeQuestions(propertyList, change, union) {
     var changeIsWithinInnerProperty = true // assume true until proven otherwise
     var changeCouldRelocateInnerProperty = true // assume true until prove otherwise
     for(var n=0; n<propertyListDepth; n++) {
-        if(parseInt(change.property[n]) !== propertyList[n]) {
+        if(change.property[n] !== propertyList[n]+'') {
             changeIsWithinInnerProperty = false
             if(n<change.property.length) {
                 changeCouldRelocateInnerProperty = false
