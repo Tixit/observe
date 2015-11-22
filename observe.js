@@ -449,7 +449,8 @@ function changeQuestions(propertyList, change, union) {
     var changeIsWithinInnerProperty = true // assume true until proven otherwise
     var changeCouldRelocateInnerProperty = true // assume true until prove otherwise
     for(var n=0; n<propertyListDepth; n++) {
-        if(change.property[n] !== propertyList[n]+'') {
+        // stringifying the property parts so that indexes can either be strings or integers, but must ensure we don't stringify undefined (possible todo: when/if you get rid of dot notation, this might not be necessary anymore? not entirely sure)
+        if(change.property[n] === undefined || change.property[n]+'' !== propertyList[n]+'') {
             changeIsWithinInnerProperty = false
             if(n<change.property.length) {
                 changeCouldRelocateInnerProperty = false

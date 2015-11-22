@@ -11,6 +11,7 @@ module.exports = function(t) {
 
 
 
+
     //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
@@ -743,7 +744,19 @@ module.exports = function(t) {
             a.set(2, 2.1)
         })
 
+        this.test("ObserveeChild change wasn't getting triggered for arrays after elements have been shifted via a splice", function(t) {
+           this.count(1)
 
+            var a = O([[3,4]])
+            var thing = a.get(0)
+            a.splice(0, 0, [1,2])
+
+            thing.on('change', function(change) {
+                t.eq(thing.subject[0], 3)
+            })
+
+            thing.splice(1,1)
+        })
     })
 
     //*/
