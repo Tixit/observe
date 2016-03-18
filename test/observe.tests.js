@@ -12,6 +12,8 @@ module.exports = function(t) {
 
 
 
+
+
     //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
@@ -756,6 +758,16 @@ module.exports = function(t) {
             })
 
             thing.splice(1,1)
+        })
+
+        this.test("ObserveeChild for inner properties 4 or more properties deep causes exception if the outer object is reset", function() {
+            var x = O({
+                a: {b: {c: {d:{}}}}
+            })
+
+            var y = x.get('a.b.c.d')
+
+            x.set('a', 1) // was causing an exception
         })
     })
 

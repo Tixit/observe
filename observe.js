@@ -153,23 +153,22 @@ var ObserveeChild = proto(EventEmitter, function() {
         this.property = propertyList
         this.subject = getPropertyValue(parent.subject, propertyList)
 
-        var that = this
-        parent.on('change', function(change) {
+        var that = this, changeHandler
+        parent.on('change', changeHandler=function(change) {
             var answers = changeQuestions(that.property, change, that.options.union)
 
-            if(change.type === 'set' && change.property.length <= that.property.length && that.options.union === undefined) {    // if the subject may have been replaced with a new subject
-                //getPropertyValue(parent.subject, propertyList)
-                var pointer = getPropertyPointer(parent.subject, propertyList)
-                if(pointer.obj !== undefined) {
-                    if(pointer.key !== undefined) {
-                        that.subject =pointer.obj[pointer.key]
-                    } else {
-                        that.subject =pointer.obj
+            if(answers.isWithin) {
+                if(change.type === 'set' && change.property.length <= that.property.length && that.options.union === undefined) { // if the subject may have been replaced with a new subject
+                    var pointer = getPropertyPointer(parent.subject, propertyList)
+                    if(pointer.obj !== undefined) {
+                        if(pointer.key !== undefined) {
+                            that.subject =pointer.obj[pointer.key]
+                        } else {
+                            that.subject =pointer.obj
+                        }
                     }
                 }
-            }
 
-            if(answers.isWithin) {
                 that.emit('change', {
                     type:change.type, property: change.property.slice(that.property.length),
                     index:change.index, count:change.count, removed: change.removed, data: change.data
@@ -177,16 +176,19 @@ var ObserveeChild = proto(EventEmitter, function() {
             } else if(answers.couldRelocate) {
                 if(change.type === 'removed') {
                     var relevantIndex = that.property[change.property.length]
-                    var removedIndexesAreBeforeIndexOfObserveeChild = change.index + change.removed.length - 1 < relevantIndex
-
-                    if(removedIndexesAreBeforeIndexOfObserveeChild) {
+                    var lastRemovedIndex = change.index + change.removed.length - 1
+                    if(lastRemovedIndex < relevantIndex) {
                         that.property[change.property.length] = relevantIndex - change.removed.length // change the propertyList to match the new index
+                    } else if(lastRemovedIndex === relevantIndex) {
+                        parent.removeListener(change, changeHandler)
                     }
                 } else if(change.type === 'added') {
                     var relevantIndex = parseInt(that.property[change.property.length])
                     if(change.index <= relevantIndex) {
                         that.property[change.property.length] = relevantIndex + change.count // change the propertyList to match the new index
                     }
+                } else if(change.type === 'set') {
+                    parent.removeListener(change, changeHandler)
                 }
             }
         })
