@@ -13,7 +13,7 @@
    "url": "git://github.com/Tixit/observe"
  },
  "dependencies":{
-    "proto": ""
+    "proto": "*"
  },
  "devDependencies": {
     "deadunit":"",
