@@ -255,6 +255,8 @@ var ObserveeChild = proto(EventEmitter, function() {
 
 // that - the Observee object
 function setInternal(that, propertyList, value, options) {
+    if(propertyList.length === 0) throw new Error("You can't set at the top-level, setting like that only works for ObserveeChild (sub-observees created with 'get')")
+
     var pointer = getPropertyPointer(that.subject, propertyList)
 
     var internalObservee = value

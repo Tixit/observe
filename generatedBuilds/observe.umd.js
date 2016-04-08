@@ -39,6 +39,32 @@ var Observe = module.exports = proto(EventEmitter, function() {
         pushInternal(this, [], arguments, {})
     }
 
+    this.pop = function() {
+        var elements = spliceInternal(this, [], [this.subject.length-1,1], {})
+        return elements[0]
+    }
+
+    this.unshift = function(/*value...*/) {
+        spliceInternal(this, [], [0,0].concat(Array.prototype.slice.call(arguments, 0)), {})
+    }
+    this.shift = function() {
+        var elements = spliceInternal(this, [], [0,1], {})
+        return elements[0]
+    }
+
+    this.reverse = function() {
+        this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
+
+    this.sort = function() {
+        this.subject.sort.apply(this.subject, arguments)
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
 
     // index is the index to remove/insert at
     // countToRemove is the number to remove
@@ -128,11 +154,22 @@ var ObserveeChild = proto(EventEmitter, function() {
         this.property = propertyList
         this.subject = getPropertyValue(parent.subject, propertyList)
 
-        var that = this
-        parent.on('change', function(change) {
-            var answers = changeQuestions(that.property, change)
+        var that = this, changeHandler
+        parent.on('change', changeHandler=function(change) {
+            var answers = changeQuestions(that.property, change, that.options.union)
 
-            if(answers.isWithin ) {
+            if(answers.isWithin) {
+                if(change.type === 'set' && change.property.length <= that.property.length && that.options.union === undefined) { // if the subject may have been replaced with a new subject
+                    var pointer = getPropertyPointer(parent.subject, propertyList)
+                    if(pointer.obj !== undefined) {
+                        if(pointer.key !== undefined) {
+                            that.subject =pointer.obj[pointer.key]
+                        } else {
+                            that.subject =pointer.obj
+                        }
+                    }
+                }
+
                 that.emit('change', {
                     type:change.type, property: change.property.slice(that.property.length),
                     index:change.index, count:change.count, removed: change.removed, data: change.data
@@ -140,16 +177,19 @@ var ObserveeChild = proto(EventEmitter, function() {
             } else if(answers.couldRelocate) {
                 if(change.type === 'removed') {
                     var relevantIndex = that.property[change.property.length]
-                    var removedIndexesAreBeforeIndexOfObserveeChild = change.index + change.removed.length - 1 < relevantIndex
-
-                    if(removedIndexesAreBeforeIndexOfObserveeChild) {
+                    var lastRemovedIndex = change.index + change.removed.length - 1
+                    if(lastRemovedIndex < relevantIndex) {
                         that.property[change.property.length] = relevantIndex - change.removed.length // change the propertyList to match the new index
+                    } else if(lastRemovedIndex === relevantIndex) {
+                        parent.removeListener(change, changeHandler)
                     }
                 } else if(change.type === 'added') {
-                    var relevantIndex = that.property[change.property.length]
-                    if(change.index < relevantIndex) {
+                    var relevantIndex = parseInt(that.property[change.property.length])
+                    if(change.index <= relevantIndex) {
                         that.property[change.property.length] = relevantIndex + change.count // change the propertyList to match the new index
                     }
+                } else if(change.type === 'set') {
+                    parent.removeListener(change, changeHandler)
                 }
             }
         })
@@ -166,9 +206,35 @@ var ObserveeChild = proto(EventEmitter, function() {
     this.push = function(/*values...*/) {
         pushInternal(this._observeeParent, this.property, arguments, this.options)
     }
+    this.pop = function() {
+        var elements = spliceInternal(this._observeeParent, this.property, [this.subject.length-1,1], this.options)
+        return elements[0]
+    }
+
+    this.unshift = function(/*value...*/) {
+        spliceInternal(this._observeeParent, this.property, [0,0].concat(Array.prototype.slice.call(arguments,0)), this.options)
+    }
+    this.shift = function() {
+        var elements = spliceInternal(this._observeeParent, this.property, [0,1], this.options)
+        return elements[0]
+    }
 
     this.splice = function(index, countToRemove/*[, elementsToAdd....]*/) {
         return spliceInternal(this._observeeParent, this.property, arguments, this.options)
+    }
+
+    this.reverse = function() {
+        this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
+
+    this.sort = function() {
+        this.subject.sort.apply(this.subject, arguments)
+        this.emit('change', {
+            type:'set', property: []
+        })
     }
 
     this.append = function(/*[property,] arrayToAppend*/) {
@@ -190,6 +256,8 @@ var ObserveeChild = proto(EventEmitter, function() {
 
 // that - the Observee object
 function setInternal(that, propertyList, value, options) {
+    if(propertyList.length === 0) throw new Error("You can't set at the top-level, setting like that only works for ObserveeChild (sub-observees created with 'get')")
+
     var pointer = getPropertyPointer(that.subject, propertyList)
 
     var internalObservee = value
@@ -214,7 +282,7 @@ function pushInternal(that, propertyList, args, options) {
 
     var internalObservees = unionizeList(array, originalLength, args.length, options.union)
 
-    var event = {type: 'added', property: propertyList, index: originalLength, count: 1}
+    var event = {type: 'added', property: propertyList, index: originalLength, count: args.length}
     if(options.data !== undefined) event.data = event.id = options.data
     that.emit('change', event)
 
@@ -331,7 +399,7 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
             var propertyListToAskFor = propertyList.concat(['subject'])
         }
 
-        var answers = changeQuestions(propertyListToAskFor, change)
+        var answers = changeQuestions(propertyListToAskFor, change, true)
         var changeIsWithinInnerProperty = answers.isWithin
         var changeCouldRelocateInnerProperty = answers.couldRelocate
 
@@ -379,13 +447,15 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
     // isWithin: _,           // true if changeIsWithinInnerProperty
     // couldRelocate: _       // true if changeCouldRelocateInnerProperty or if innerProperty might be removed
 // }
-function changeQuestions(propertyList, change) {
+function changeQuestions(propertyList, change, union) {
     var propertyListDepth = propertyList.length
+    var unioned = union!==undefined
 
     var changeIsWithinInnerProperty = true // assume true until proven otherwise
     var changeCouldRelocateInnerProperty = true // assume true until prove otherwise
     for(var n=0; n<propertyListDepth; n++) {
-        if(change.property[n] !== propertyList[n]) {
+        // stringifying the property parts so that indexes can either be strings or integers, but must ensure we don't stringify undefined (possible todo: when/if you get rid of dot notation, this might not be necessary anymore? not entirely sure)
+        if(change.property[n] === undefined || change.property[n]+'' !== propertyList[n]+'') {
             changeIsWithinInnerProperty = false
             if(n<change.property.length) {
                 changeCouldRelocateInnerProperty = false
@@ -393,8 +463,9 @@ function changeQuestions(propertyList, change) {
         }
     }
 
-    if((change.type === 'set' && change.property.length <= propertyListDepth)
-        || (change.type !== 'set' && change.property.length < propertyListDepth)
+    if(!unioned && change.property.length < propertyListDepth
+       || unioned && (change.type === 'set' && change.property.length <= propertyListDepth   // if this is a unioned observee, replacing it actually removes it
+                   || change.type !== 'set' && change.property.length < propertyListDepth)
     ) {
         changeIsWithinInnerProperty = false
     } else {

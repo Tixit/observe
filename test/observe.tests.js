@@ -8,12 +8,6 @@ module.exports = function(t) {
 
 
 
-
-
-
-
-
-
     //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
@@ -593,6 +587,20 @@ module.exports = function(t) {
         observer.get('c').append([5,6,7])// prints "My c property got 3 new values: 5,6,7."
     })
 
+    this.test("errors", function() {
+        this.test("setting top level should throw an exception", function() {
+            this.count(1)
+
+            var x = O([1,2,3])
+
+            try {
+                x.set([], 3)
+            } catch(e) {
+                this.eq(e.message, "You can't set at the top-level, setting like that only works for ObserveeChild (sub-observees created with 'get')")
+            }
+        })
+    })
+
     this.test('former bugs', function() {
         this.test("union push on array with 1 or more elements didn't correctly setup change event handlers", function(t) {
             this.count(2)
@@ -769,6 +777,7 @@ module.exports = function(t) {
 
             x.set('a', 1) // was causing an exception
         })
+
     })
 
     //*/

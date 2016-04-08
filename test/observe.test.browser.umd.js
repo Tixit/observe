@@ -8898,6 +8898,32 @@ var Observe = module.exports = proto(EventEmitter, function() {
         pushInternal(this, [], arguments, {})
     }
 
+    this.pop = function() {
+        var elements = spliceInternal(this, [], [this.subject.length-1,1], {})
+        return elements[0]
+    }
+
+    this.unshift = function(/*value...*/) {
+        spliceInternal(this, [], [0,0].concat(Array.prototype.slice.call(arguments, 0)), {})
+    }
+    this.shift = function() {
+        var elements = spliceInternal(this, [], [0,1], {})
+        return elements[0]
+    }
+
+    this.reverse = function() {
+        this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
+
+    this.sort = function() {
+        this.subject.sort.apply(this.subject, arguments)
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
 
     // index is the index to remove/insert at
     // countToRemove is the number to remove
@@ -8987,11 +9013,22 @@ var ObserveeChild = proto(EventEmitter, function() {
         this.property = propertyList
         this.subject = getPropertyValue(parent.subject, propertyList)
 
-        var that = this
-        parent.on('change', function(change) {
-            var answers = changeQuestions(that.property, change)
+        var that = this, changeHandler
+        parent.on('change', changeHandler=function(change) {
+            var answers = changeQuestions(that.property, change, that.options.union)
 
-            if(answers.isWithin ) {
+            if(answers.isWithin) {
+                if(change.type === 'set' && change.property.length <= that.property.length && that.options.union === undefined) { // if the subject may have been replaced with a new subject
+                    var pointer = getPropertyPointer(parent.subject, propertyList)
+                    if(pointer.obj !== undefined) {
+                        if(pointer.key !== undefined) {
+                            that.subject =pointer.obj[pointer.key]
+                        } else {
+                            that.subject =pointer.obj
+                        }
+                    }
+                }
+
                 that.emit('change', {
                     type:change.type, property: change.property.slice(that.property.length),
                     index:change.index, count:change.count, removed: change.removed, data: change.data
@@ -8999,16 +9036,19 @@ var ObserveeChild = proto(EventEmitter, function() {
             } else if(answers.couldRelocate) {
                 if(change.type === 'removed') {
                     var relevantIndex = that.property[change.property.length]
-                    var removedIndexesAreBeforeIndexOfObserveeChild = change.index + change.removed.length - 1 < relevantIndex
-
-                    if(removedIndexesAreBeforeIndexOfObserveeChild) {
+                    var lastRemovedIndex = change.index + change.removed.length - 1
+                    if(lastRemovedIndex < relevantIndex) {
                         that.property[change.property.length] = relevantIndex - change.removed.length // change the propertyList to match the new index
+                    } else if(lastRemovedIndex === relevantIndex) {
+                        parent.removeListener(change, changeHandler)
                     }
                 } else if(change.type === 'added') {
-                    var relevantIndex = that.property[change.property.length]
-                    if(change.index < relevantIndex) {
+                    var relevantIndex = parseInt(that.property[change.property.length])
+                    if(change.index <= relevantIndex) {
                         that.property[change.property.length] = relevantIndex + change.count // change the propertyList to match the new index
                     }
+                } else if(change.type === 'set') {
+                    parent.removeListener(change, changeHandler)
                 }
             }
         })
@@ -9025,9 +9065,35 @@ var ObserveeChild = proto(EventEmitter, function() {
     this.push = function(/*values...*/) {
         pushInternal(this._observeeParent, this.property, arguments, this.options)
     }
+    this.pop = function() {
+        var elements = spliceInternal(this._observeeParent, this.property, [this.subject.length-1,1], this.options)
+        return elements[0]
+    }
+
+    this.unshift = function(/*value...*/) {
+        spliceInternal(this._observeeParent, this.property, [0,0].concat(Array.prototype.slice.call(arguments,0)), this.options)
+    }
+    this.shift = function() {
+        var elements = spliceInternal(this._observeeParent, this.property, [0,1], this.options)
+        return elements[0]
+    }
 
     this.splice = function(index, countToRemove/*[, elementsToAdd....]*/) {
         return spliceInternal(this._observeeParent, this.property, arguments, this.options)
+    }
+
+    this.reverse = function() {
+        this.subject.reverse()
+        this.emit('change', {
+            type:'set', property: []
+        })
+    }
+
+    this.sort = function() {
+        this.subject.sort.apply(this.subject, arguments)
+        this.emit('change', {
+            type:'set', property: []
+        })
     }
 
     this.append = function(/*[property,] arrayToAppend*/) {
@@ -9049,6 +9115,8 @@ var ObserveeChild = proto(EventEmitter, function() {
 
 // that - the Observee object
 function setInternal(that, propertyList, value, options) {
+    if(propertyList.length === 0) throw new Error("You can't set at the top-level, setting like that only works for ObserveeChild (sub-observees created with 'get')")
+
     var pointer = getPropertyPointer(that.subject, propertyList)
 
     var internalObservee = value
@@ -9073,7 +9141,7 @@ function pushInternal(that, propertyList, args, options) {
 
     var internalObservees = unionizeList(array, originalLength, args.length, options.union)
 
-    var event = {type: 'added', property: propertyList, index: originalLength, count: 1}
+    var event = {type: 'added', property: propertyList, index: originalLength, count: args.length}
     if(options.data !== undefined) event.data = event.id = options.data
     that.emit('change', event)
 
@@ -9190,7 +9258,7 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
             var propertyListToAskFor = propertyList.concat(['subject'])
         }
 
-        var answers = changeQuestions(propertyListToAskFor, change)
+        var answers = changeQuestions(propertyListToAskFor, change, true)
         var changeIsWithinInnerProperty = answers.isWithin
         var changeCouldRelocateInnerProperty = answers.couldRelocate
 
@@ -9238,13 +9306,15 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
     // isWithin: _,           // true if changeIsWithinInnerProperty
     // couldRelocate: _       // true if changeCouldRelocateInnerProperty or if innerProperty might be removed
 // }
-function changeQuestions(propertyList, change) {
+function changeQuestions(propertyList, change, union) {
     var propertyListDepth = propertyList.length
+    var unioned = union!==undefined
 
     var changeIsWithinInnerProperty = true // assume true until proven otherwise
     var changeCouldRelocateInnerProperty = true // assume true until prove otherwise
     for(var n=0; n<propertyListDepth; n++) {
-        if(change.property[n] !== propertyList[n]) {
+        // stringifying the property parts so that indexes can either be strings or integers, but must ensure we don't stringify undefined (possible todo: when/if you get rid of dot notation, this might not be necessary anymore? not entirely sure)
+        if(change.property[n] === undefined || change.property[n]+'' !== propertyList[n]+'') {
             changeIsWithinInnerProperty = false
             if(n<change.property.length) {
                 changeCouldRelocateInnerProperty = false
@@ -9252,8 +9322,9 @@ function changeQuestions(propertyList, change) {
         }
     }
 
-    if((change.type === 'set' && change.property.length <= propertyListDepth)
-        || (change.type !== 'set' && change.property.length < propertyListDepth)
+    if(!unioned && change.property.length < propertyListDepth
+       || unioned && (change.type === 'set' && change.property.length <= propertyListDepth   // if this is a unioned observee, replacing it actually removes it
+                   || change.type !== 'set' && change.property.length < propertyListDepth)
     ) {
         changeIsWithinInnerProperty = false
     } else {
@@ -9272,45 +9343,243 @@ var O = require("../observe")
 module.exports = function(t) {
 
 
-    //*
+
+
+
+
+
+        this.test("setting top level should throw an exception", function() {
+            var x = O([1,2,3])
+
+            x.set([], 3)
+            this.eq(x.subject, 4)
+        })
+
+
+    /*
     this.test('basic methods and events', function(t) {
-        this.count(12)
+        this.test("basic set, get, push, append, and splice", function(t) {
+            this.count(12)
 
-        var obj = {a: 1, b:{}, c:[]}
-        var subject = O(obj)
+            var obj = {a: 1, b:{}, c:[]}
+            var subject = O(obj)
 
-        var changeSequence = testUtils.sequence()
-        subject.on('change', function(change) {
-            changeSequence(function(){
-                t.ok(equal(change, {type: 'set', property:['a']}), change)
-            },function(){
-                t.ok(equal(change, {type: 'set', property:['b', 'x']}), change)
-            },function(){
-                t.ok(equal(change, {type: 'added', property:['c'], index: 0, count:1}), change)
-            },function(){
-                t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:3}), change)
-            },function() {
-                t.ok(equal(change, {type: 'removed', property:['c'], index: 1, removed:[3]}), change)
-            }, function() {
-                t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:1}), change)
+            var changeSequence = testUtils.sequence()
+            subject.on('change', function(change) {
+                changeSequence(function(){
+                    t.ok(equal(change, {type: 'set', property:['a']}), change)
+                },function(){
+                    t.ok(equal(change, {type: 'set', property:['b', 'x']}), change)
+                },function(){
+                    t.ok(equal(change, {type: 'added', property:['c'], index: 0, count:1}), change)
+                },function(){
+                    t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:3}), change)
+                },function() {
+                    t.ok(equal(change, {type: 'removed', property:['c'], index: 1, removed:[3]}), change)
+                }, function() {
+                    t.ok(equal(change, {type: 'added', property:['c'], index: 1, count:1}), change)
+                })
+            })
+
+            subject.set('a', 5)
+            this.eq(obj.a, 5)
+
+            subject.set('b.x', 12)
+            this.eq(obj.b.x, 12)
+
+            subject.get('c').push(4)
+            this.ok(equal(obj.c, [4]))
+
+            subject.get('c').append([3,2,1])
+            this.ok(equal(obj.c, [4,3,2,1]))
+
+            var splicedValues = subject.get('c').splice(1, 1, 99)
+            this.ok(equal(obj.c, [4,99,2,1]), obj.c)
+            this.ok(equal(splicedValues, [3]))
+        })
+
+        this.test("pop", function() {
+            this.test("pop - regular", function(t) {
+                this.count(3)
+
+                var subject = [1,2,3]
+                var obs = O(subject)
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'removed', property: [], index:2, removed: [3]}), change)
+                })
+
+                t.eq(obs.pop(), 3)
+                t.ok(equal(obs.subject, [1,2]))
+            })
+
+            this.test("pop - observee child", function(t) {
+                this.count(3)
+
+                var subject = {a:[1,2,3]}
+                var obs = O(subject).get('a')
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'removed', property: [], index:2, removed: [3], count:undefined,data:undefined}), change)
+                })
+
+                t.eq(obs.pop(), 3)
+                t.ok(equal(obs.subject, [1,2]))
             })
         })
 
-        subject.set('a', 5)
-        this.eq(obj.a, 5)
+        this.test("shift and unshift", function() {
+            this.test("regular", function(t) {
+                this.count(13)
 
-        subject.set('b.x', 12)
-        this.eq(obj.b.x, 12)
+                var subject = []
+                var obs = O(subject)
 
-        subject.get('c').push(4)
-        this.ok(equal(obj.c, [4]))
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:1}), change)
+                    },function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:2}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[3]}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[4]}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[5]}), change)
+                    })
+                })
 
-        subject.get('c').append([3,2,1])
-        this.ok(equal(obj.c, [4,3,2,1]))
+                obs.unshift(5)
+                t.ok(equal(subject, [5]), subject)
 
-        var splicedValues = subject.get('c').splice(1, 1, 99)
-        this.ok(equal(obj.c, [4,99,2,1]), obj.c)
-        this.ok(equal(splicedValues, [3]))
+                obs.unshift(3,4)
+                t.ok(equal(subject, [3,4,5]), subject)
+
+                t.eq(obs.shift(), 3)
+                t.ok(equal(obs.subject, [4,5]), subject)
+                t.eq(obs.shift(), 4)
+                t.ok(equal(obs.subject, [5]))
+                t.eq(obs.shift(), 5)
+                t.ok(equal(obs.subject, []))
+            })
+
+            this.test("shift and unshift - observee child", function(t) {
+                this.count(13)
+
+                var subject = {a:[]}
+                var obs = O(subject).get('a')
+
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:1, removed:undefined,data:undefined}), change)
+                    },function(){
+                        t.ok(equal(change, {type: 'added', property:[], index: 0, count:2, removed:undefined,data:undefined}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[3], count:undefined,data:undefined}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[4], count:undefined,data:undefined}), change)
+                    },function() {
+                        t.ok(equal(change, {type: 'removed', property:[], index: 0, removed:[5], count:undefined,data:undefined}), change)
+                    })
+                })
+
+                obs.unshift(5)
+                t.ok(equal(subject.a, [5]), subject.a)
+
+                obs.unshift(3,4)
+                t.ok(equal(subject.a, [3,4,5]), subject.a)
+
+                t.eq(obs.shift(), 3)
+                t.ok(equal(obs.subject, [4,5]), subject.a)
+                t.eq(obs.shift(), 4)
+                t.ok(equal(obs.subject, [5]))
+                t.eq(obs.shift(), 5)
+                t.ok(equal(obs.subject, []))
+            })
+        })
+
+        this.test("reverse", function() {
+            this.test("regular", function(t) {
+                this.count(2)
+
+                var subject = [1,2,3]
+                var obs = O(subject)
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'set', property: []}), change)
+                })
+
+                obs.reverse()
+                t.ok(equal(subject, [3,2,1]))
+            })
+            this.test("reverse - observee child", function(t) {
+                this.count(2)
+
+                var subject = {a:[1,2,3]}
+                var obs = O(subject).get('a')
+
+                obs.on('change', function(change) {
+                    t.ok(equal(change, {type:'set', property: []}), change)
+                })
+
+                obs.reverse()
+                t.ok(equal(subject.a, [3,2,1]))
+            })
+        })
+
+        this.test("sort", function() {
+            this.test("regular", function(t) {
+                this.count(4)
+
+                var subject = [1,3,2]
+                var obs = O(subject)
+
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    },function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    })
+                })
+
+                obs.sort(function(a,b) {
+                    return b-a // reverse sort
+                })
+                t.ok(equal(subject, [3,2,1]))
+
+                obs.sort()
+                t.ok(equal(subject, [1,2,3]))
+            })
+            this.test("sort - observee child", function(t) {
+                this.count(4)
+
+                var subject = {a:[1,2,3]}
+                var obs = O(subject).get('a')
+
+                var changeSequence = testUtils.sequence()
+                obs.on('change', function(change) {
+                    changeSequence(function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    },function(){
+                        t.ok(equal(change, {type:'set', property: []}), change)
+                    })
+                })
+
+                obs.sort(function(a,b) {
+                    return b-a // reverse sort
+                })
+                t.ok(equal(subject.a, [3,2,1]))
+
+                obs.sort()
+                t.ok(equal(subject.a, [1,2,3]))
+            })
+        })
+
+//
+//**`observer.reverse()`** - Emits a `"set"` change event.
     });
 
     this.test('array stuff', function(t) {
@@ -9368,6 +9637,43 @@ module.exports = function(t) {
         subSubject.set('b', 6)
     })
 
+    this.test('get - complex', function(t) {
+        this.count(12)
+
+        var obj = {a:[{b:1}]}
+        var subject = O(obj)
+        var subSubject = subject.get('a.0.b')
+
+        var subjectSequence = testUtils.sequence()
+        subject.on('change', function(change) {
+            subjectSequence(function(){
+                t.ok(equal(change, {type:'set', property: ['a','0','b']}), change)
+                t.eq(subject.subject.a[0].b, 2)
+                t.eq(subSubject.subject, 2)
+            }, function() {
+                t.ok(equal(change, {type:'set', property: ['a','0','b']}), change)
+                t.eq(subject.subject.a[0].b, 3)
+                t.eq(subSubject.subject, 3)
+            })
+        })
+
+        var subSubjectSequence = testUtils.sequence()
+        subSubject.on('change', function(change) {
+            subSubjectSequence(function(){
+                t.ok(equal(change, {type:'set', property: []}), change)
+                t.eq(subject.subject.a[0].b, 2)
+                t.eq(subSubject.subject, 2)
+            }, function() {
+                t.ok(equal(change, {type:'set', property: []}), change)
+                t.eq(subject.subject.a[0].b, 3)
+                t.eq(subSubject.subject, 3)
+            })
+        })
+
+        subject.set('a.0.b', 2)
+        subSubject.set([], 3)
+    })
+
     // deprecated
     this.test('id', function(t) {
         this.count(4)
@@ -9392,7 +9698,7 @@ module.exports = function(t) {
         observee.get('a').id(3).set(1, 4)
     })
     this.test('data', function(t) {
-        this.count(7)
+        this.count(8)
 
         var obj = {}
         var observee = O(obj)
@@ -9411,6 +9717,8 @@ module.exports = function(t) {
         var changeSequenceA = testUtils.sequence()
         observee.get('a').on('change', function(change) {
             changeSequenceA(function(){
+                t.eq(change.data, 1)
+            },function(){
                 t.eq(change.data, 2)
             },function(){
                 t.eq(change.data, 3)
@@ -9569,6 +9877,64 @@ module.exports = function(t) {
 
     })
 
+    // testing the demo in the readme
+    this.test("demo", function(t) {
+        this.count(13)
+        var observe = O
+
+        var eventSequence = testUtils.sequence()
+        var event = function(event) {
+            eventSequence(function() {
+                t.eq(event, "My 'a' property changed to: 2.")
+                t.eq(object.a, 2)
+            },function() {
+                t.eq(event, "FINALLY someone sets my b.x property!")
+                t.eq(object.b.x, 'hi')
+                t.eq(Object.keys(object.b).length, 1)
+            },function() {
+                t.eq(event, "My c property got 2 new values: 3,4.")
+                t.ok(equal(object.c, [3,4]))
+            },function() {
+                t.eq(event, "Someone took 3 from c!")
+                t.ok(equal(object.c, [4]))
+            },function() {
+                t.eq(event, "Well i just don't know *what's* going on with b.y.")
+                t.eq(object.b.y, 'ho')
+            },function() {
+                t.eq(event, "My c property got 3 new values: 5,6,7.")
+                t.ok(equal(object.c, [4,5,6,7]))
+            })
+        }
+
+        // demo starts here
+
+        var object = {a:1, b:{}, c:[]}
+        var observer = observe(object)
+
+        observer.on('change', function(change) {
+           if(change.property[0] === 'a') {
+              event("My 'a' property changed to: "+observer.subject.a + '.')
+           } else if(change.property[0] === 'b' && change.property[1] === 'x') {
+              event("FINALLY someone sets my b.x property!")
+           } else if(change.property[0] === 'c' && change.type === 'added') {
+              var s = change.count>1 ? 's' : '' // plural
+              event("My c property got "+change.count+" new value"+s+": "+observer.subject.c.slice(change.index, change.index+change.count) +'.')
+           } else if(change.property[0] === 'c' && change.type === 'removed') {
+              var s = change.count>1 ? 's' : '' // plural
+              event("Someone took "+change.removed+" from c!")
+           } else {
+              event("Well i just don't know *what's* going on with "+change.property.join('.') +".")
+           }
+        })
+
+        observer.set('a', 2)             // prints "My 'a' property changed to: 2."
+        observer.set('b.x', 'hi')        // prints "FINALLY someone sets my b.x property!"
+        observer.get('c').push(3, 4)     // prints "My c property got 2 new values: 3,4."
+        observer.get('c').splice(0,1)    // prints "Someone took 3 from c!"
+        observer.set('b.y', 'ho')        // prints "Well i just don't know *what's* going on with b.y."
+        observer.get('c').append([5,6,7])// prints "My c property got 3 new values: 5,6,7."
+    })
+
     this.test('former bugs', function() {
         this.test("union push on array with 1 or more elements didn't correctly setup change event handlers", function(t) {
             this.count(2)
@@ -9695,6 +10061,63 @@ module.exports = function(t) {
             })
             thing.push(3)
         })
+
+        this.test("ObserveeChild exception when that child is removed", function (t) {
+            var a = O([{x:1}])
+            var thing = a.get("0.x")
+            a.splice(0,1)
+        })
+
+        this.test("ObserveeChild exception after that child is removed and then a sibling value is set", function (t) {
+            var a = O([{x:1},{x:2}])
+            var thing = a.get("1.x")
+            a.splice(1,1)
+            a.set('0.x', 2)
+        })
+
+        this.test("ObserveeChild not pointing to correct subject after inserts at it index", function (t) {
+            this.count(1)
+
+            var a = O([1,2])
+            var thing = a.get("1")
+            thing.on('change', function(change) {
+                t.eq(thing.subject,2.1)
+            })
+
+            a.splice(1,0,1.5)
+            a.set(2, 2.1)
+        })
+
+        this.test("ObserveeChild change wasn't getting triggered for arrays after elements have been shifted via a splice", function(t) {
+           this.count(1)
+
+            var a = O([[3,4]])
+            var thing = a.get(0)
+            a.splice(0, 0, [1,2])
+
+            thing.on('change', function(change) {
+                t.eq(thing.subject[0], 3)
+            })
+
+            thing.splice(1,1)
+        })
+
+        this.test("ObserveeChild for inner properties 4 or more properties deep causes exception if the outer object is reset", function() {
+            var x = O({
+                a: {b: {c: {d:{}}}}
+            })
+
+            var y = x.get('a.b.c.d')
+
+            x.set('a', 1) // was causing an exception
+        })
+
+        this.test("setting top level wasn't working right", function() {
+            var x = O([1,2,3])
+
+            x.set([], [4,5,6])
+            this.eq(x.subject[0], 4)
+        })
     })
 
     //*/
@@ -9756,16 +10179,20 @@ exports.equal = function(a,b) {
         if(a.length !== b.length) {
             return false
         } else {
-            return a.reduce(function(previousValue, currentValue, index) {
-                return previousValue && exports.equal(currentValue,b[index])
-            }, true)
+            for(var n=0; n<a.length; n++) {
+                if(!exports.equal(a[n],b[n])) {
+                    return false
+                }
+            }
+            // else
+            return true
         }
     } else if(a instanceof Object) {
         if(!(b instanceof Object))
             return false
 
-        var aKeys = Object.keys(a)
-        var bKeys = Object.keys(b)
+        var aKeys = getKeys(a)
+        var bKeys = getKeys(b)
 
         if(aKeys.length !== bKeys.length) {
             return false
@@ -9783,8 +10210,20 @@ exports.equal = function(a,b) {
             return true
         }
     } else {
-        return a===b
+        return a===b || Number.isNaN(a) && Number.isNaN(b)
     }
+}
+
+// counts object keys ignoring properties that are undefined
+function getKeys(x) {
+    var keys=[]
+    for(var k in x) {
+        if(x[k] !== undefined) {
+            keys.push(k)
+        }
+    }
+
+    return keys
 }
 
 // returns a function that should be passed a bunch of functions as its arguments

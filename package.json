@@ -16,7 +16,7 @@
     "proto": "*"
  },
  "devDependencies": {
-    "deadunit":"",
+    "deadunit":"*",
     "build-modules":"1.0.12"
  }
 }
