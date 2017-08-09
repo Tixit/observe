@@ -778,6 +778,17 @@ module.exports = function(t) {
             x.set('a', 1) // was causing an exception
         })
 
+        this.test("ObserveeChild could be in an invalid state when 'get' is called on its parent", function(t) {
+            var x = O([{a:1}, {a:2}])
+
+            x.on('change', function() {
+                t.eq(first.get('a').subject, 1)
+            })
+
+            var first = x.get(0)
+            x.splice(0, 0, {a:0}) // was causing an exception
+        })
+
     })
 
     //*/

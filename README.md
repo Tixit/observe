@@ -192,6 +192,7 @@ Note that if you do this, `observer.union(true)` will *not* add objects in such 
 Changelog
 ========
 
+* 1.3.8 - Fixing bug where ObserveeChild could be in an invalid state when change events for its parent are emitted
 * 1.3.6 - Fixing bug where ObserveeChild was throwing an exception after being removed from its parent
 * 1.3.5 - Fixing bug where ObserveeChild change wasn't getting triggered for arrays after elements have been shifted via a splice
 * 1.3.4 - Fixing bug introduced by 1.3.3

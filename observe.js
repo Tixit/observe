@@ -8,12 +8,13 @@ var utils = require("./utils")
         // {data:_, type: 'set', property: propertyList}
         // {data:_, type: 'added', property: propertyList, index:_, count: numberOfElementsAdded}
         // {data:_, type: 'removed', property: propertyList, index:_, removed: removedValues}
-var Observe = module.exports = proto(EventEmitter, function() {
+var Observe = module.exports = proto(EventEmitter, function(superclass) {
 
     // static members
 
     this.init = function(obj) {
         this.subject = obj
+        this.internalChangeListeners = []
 
         this.setMaxListeners(1000)
     }
@@ -81,6 +82,16 @@ var Observe = module.exports = proto(EventEmitter, function() {
         return ObserveeChild(this, [], {data: data})
     }
 
+    /*override*/ this.emit = function(type) {
+        if(type === 'change') {
+            var args = Array.prototype.slice.call(arguments, 1)
+            this.internalChangeListeners.forEach(function(handler) {
+                handler.apply(this, args)
+            }.bind(this))
+        }
+        superclass.prototype.emit.apply(this, arguments)
+    }
+
     // For the returned object, any property added via set, push, splice, or append joins an internal observee together with this observee, so that
     //      the internal observee and the containing observee will both send 'change' events appropriately
     // collapse - (default: false) if true, any property added will be set to the subject of the value added (so that value won't be an observee anymore
@@ -106,6 +117,16 @@ var Observe = module.exports = proto(EventEmitter, function() {
         this.paused = undefined
         sendEvent(this)
     }*/
+
+    // private
+
+    this.onChangeInternal = function(handler) {
+        this.internalChangeListeners.push(handler)
+    }
+    this.offChangeInternal = function(handler) {
+        var index = this.internalChangeListeners.indexOf(handler)
+        this.internalChangeListeners.splice(index,1)
+    }
 })
 
 
@@ -154,7 +175,7 @@ var ObserveeChild = proto(EventEmitter, function() {
         this.subject = getPropertyValue(parent.subject, propertyList)
 
         var that = this, changeHandler
-        parent.on('change', changeHandler=function(change) {
+        parent.onChangeInternal(changeHandler=function(change) {
             var answers = changeQuestions(that.property, change, that.options.union)
 
             if(answers.isWithin) {
@@ -180,7 +201,7 @@ var ObserveeChild = proto(EventEmitter, function() {
                     if(lastRemovedIndex < relevantIndex) {
                         that.property[change.property.length] = relevantIndex - change.removed.length // change the propertyList to match the new index
                     } else if(lastRemovedIndex === relevantIndex) {
-                        parent.removeListener(change, changeHandler)
+                        parent.offChangeInternal(changeHandler)
                     }
                 } else if(change.type === 'added') {
                     var relevantIndex = parseInt(that.property[change.property.length])
@@ -188,7 +209,7 @@ var ObserveeChild = proto(EventEmitter, function() {
                         that.property[change.property.length] = relevantIndex + change.count // change the propertyList to match the new index
                     }
                 } else if(change.type === 'set') {
-                    parent.removeListener(change, changeHandler)
+                    parent.offChangeInternal(changeHandler)
                 }
             }
         })
@@ -389,7 +410,7 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
             that.emit('change', containerChange)
         }
     })
-    that.on('change', containerChangeHandler = function(change) {
+    that.onChangeInternal(containerChangeHandler = function(change) {
         var changedPropertyDepth = change.property.length
 
         if(collapse) {
@@ -436,7 +457,7 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
 
     var removeUnion = function() {
         innerObservee.removeListener('change', innerChangeHandler)
-        that.removeListener('change', containerChangeHandler)
+        that.offChangeInternal(containerChangeHandler)
     }
 }
 
