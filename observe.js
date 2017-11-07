@@ -34,6 +34,10 @@ var Observe = module.exports = proto(EventEmitter, function(superclass) {
         setInternal(this, parsePropertyList(property), value, {})
     }
 
+    this.unset = function(property) {
+        unsetInternal(this, parsePropertyList(property), {})
+    }
+
     // pushes a value onto a list
     this.push = function(/*value...*/) {
         pushInternal(this, [], arguments, {})
@@ -222,6 +226,9 @@ var ObserveeChild = proto(EventEmitter, function() {
     this.set = function(property, value) {
         setInternal(this._observeeParent, this.property.concat(parsePropertyList(property)), value, this.options)
     }
+    this.unset = function(property) {
+        unsetInternal(this._observeeParent, this.property.concat(parsePropertyList(property)), this.options)
+    }
 
     this.push = function(/*values...*/) {
         pushInternal(this._observeeParent, this.property, arguments, this.options)
@@ -293,6 +300,19 @@ function setInternal(that, propertyList, value, options) {
 
     if(options.union !== undefined)
         unionizeEvents(that, internalObservee, propertyList, options.union)
+}
+
+// that - the Observee object
+function unsetInternal(that, propertyList, options) {
+    if(propertyList.length === 0) throw new Error("You can't set at the top-level, setting like that only works for ObserveeChild (sub-observees created with 'get')")
+
+    var pointer = getPropertyPointer(that.subject, propertyList)
+
+    delete pointer.obj[pointer.key]
+
+    var event = {type: 'unset', property: propertyList}
+    if(options.data !== undefined) event.data = event.id = options.data
+    that.emit('change',event)
 }
 
 function pushInternal(that, propertyList, args, options) {

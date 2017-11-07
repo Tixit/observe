@@ -8,6 +8,8 @@ module.exports = function(t) {
 
 
 
+
+
     //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
@@ -48,6 +50,31 @@ module.exports = function(t) {
             var splicedValues = subject.get('c').splice(1, 1, 99)
             this.ok(equal(obj.c, [4,99,2,1]), obj.c)
             this.ok(equal(splicedValues, [3]))
+        })
+
+        this.test("unset", function(t) {
+            this.count(4)
+
+            var subject = {a:1,b:2}
+            var obs = O(subject)
+
+            var n = 0
+            obs.on('change', function(change) {
+                if(n === 0) {
+                    t.ok(equal(change, {type:'unset', property: ['a']}), change)
+                } else {
+                    t.ok(equal(change, {type:'unset', property: ['b']}), change)
+                }
+
+                n++
+            })
+
+            obs.unset('a')
+            t.ok(equal(obs.subject, {b:2}))
+
+            var b = obs.get('b')
+            b.unset([])
+            t.ok(equal(obs.subject, {}))
         })
 
         this.test("pop", function() {
@@ -789,6 +816,22 @@ module.exports = function(t) {
             x.splice(0, 0, {a:0}) // was causing an exception
         })
 
+        // todo: consider fixing this - not entirely sure it is a "problem" to be "fixed" tho
+        // this.test("event handlers were being executed out of order when ObserveeChild is being used", function() {
+        //     var x = O([{a:1}, {a:2}])
+        //
+        //     var step = 0
+        //     x.on('change', function() {
+        //         step++
+        //         t.eq(step, 1)
+        //     })
+        //     x.get('0.a', function() {
+        //         step++
+        //         t.eq(step, 2)
+        //     })
+        //
+        //     x.set('0.a', 9)
+        // })
     })
 
     //*/
