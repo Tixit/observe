@@ -73,6 +73,9 @@ observe; // observe.global.js defines proto globally
 * `property` - The propety to set, in dot notation (see below).
 * `value` - The value to set on that property.
 
+**`observer.unset(property)`** - Deletes a value on the observer's subject and emits an `"unset"` change event.
+* `property` - The propety to unset (delete), in dot notation (see below).
+
 
 ### Standard Array Mutator Methods
 
@@ -147,7 +150,7 @@ Change Event
 
 The change event comes through whenever an observer is used to `set`, `push`, `splice`, or `append` on its subject. Listen to the `change` event using `observer.on` or any of the other standard [EventEmitter](http://nodejs.org/api/events.html#events_class_events_eventemitter) methods. The event has the following properties:
 
-* **`type`** - Either `"set"` (for value changes), `"added"` (for values added to an array), or `"removed"` (for values removed from an array).
+* **`type`** - Either `"set"` (for value changes), `"unset"` (for property deletion), `"added"` (for values added to an array), or `"removed"` (for values removed from an array).
 * **`property`** - An array where each element of the array is one part of the path of the property being changed. For example for `"a.b.c"`, the property parameter will hold `['a','b','c']`.
 * **`index`** - The array index at which values were added or removed. Only exists for `"added"` and `"removed"` events.
 * **`count`** - The number of elements added. Only exists for `"added"` events.
