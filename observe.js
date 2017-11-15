@@ -220,7 +220,9 @@ var ObserveeChild = proto(EventEmitter, function() {
     }
 
     this.get = function(property) {
-        return this._observeeParent.get(this.property.concat(parsePropertyList(property)))
+        var result = this._observeeParent.get(this.property.concat(parsePropertyList(property)))
+        result.options = this.options
+        return result
     }
 
     this.set = function(property, value) {

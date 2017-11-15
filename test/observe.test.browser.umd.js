@@ -8868,12 +8868,13 @@ var utils = require("./utils")
         // {data:_, type: 'set', property: propertyList}
         // {data:_, type: 'added', property: propertyList, index:_, count: numberOfElementsAdded}
         // {data:_, type: 'removed', property: propertyList, index:_, removed: removedValues}
-var Observe = module.exports = proto(EventEmitter, function() {
+var Observe = module.exports = proto(EventEmitter, function(superclass) {
 
     // static members
 
     this.init = function(obj) {
         this.subject = obj
+        this.internalChangeListeners = []
 
         this.setMaxListeners(1000)
     }
@@ -8891,6 +8892,10 @@ var Observe = module.exports = proto(EventEmitter, function() {
     // value - the value to set
     this.set = function(property, value) {
         setInternal(this, parsePropertyList(property), value, {})
+    }
+
+    this.unset = function(property) {
+        unsetInternal(this, parsePropertyList(property), {})
     }
 
     // pushes a value onto a list
@@ -8941,6 +8946,16 @@ var Observe = module.exports = proto(EventEmitter, function() {
         return ObserveeChild(this, [], {data: data})
     }
 
+    /*override*/ this.emit = function(type) {
+        if(type === 'change') {
+            var args = Array.prototype.slice.call(arguments, 1)
+            this.internalChangeListeners.forEach(function(handler) {
+                handler.apply(this, args)
+            }.bind(this))
+        }
+        superclass.prototype.emit.apply(this, arguments)
+    }
+
     // For the returned object, any property added via set, push, splice, or append joins an internal observee together with this observee, so that
     //      the internal observee and the containing observee will both send 'change' events appropriately
     // collapse - (default: false) if true, any property added will be set to the subject of the value added (so that value won't be an observee anymore
@@ -8966,6 +8981,16 @@ var Observe = module.exports = proto(EventEmitter, function() {
         this.paused = undefined
         sendEvent(this)
     }*/
+
+    // private
+
+    this.onChangeInternal = function(handler) {
+        this.internalChangeListeners.push(handler)
+    }
+    this.offChangeInternal = function(handler) {
+        var index = this.internalChangeListeners.indexOf(handler)
+        this.internalChangeListeners.splice(index,1)
+    }
 })
 
 
@@ -9014,7 +9039,7 @@ var ObserveeChild = proto(EventEmitter, function() {
         this.subject = getPropertyValue(parent.subject, propertyList)
 
         var that = this, changeHandler
-        parent.on('change', changeHandler=function(change) {
+        parent.onChangeInternal(changeHandler=function(change) {
             var answers = changeQuestions(that.property, change, that.options.union)
 
             if(answers.isWithin) {
@@ -9040,7 +9065,7 @@ var ObserveeChild = proto(EventEmitter, function() {
                     if(lastRemovedIndex < relevantIndex) {
                         that.property[change.property.length] = relevantIndex - change.removed.length // change the propertyList to match the new index
                     } else if(lastRemovedIndex === relevantIndex) {
-                        parent.removeListener(change, changeHandler)
+                        parent.offChangeInternal(changeHandler)
                     }
                 } else if(change.type === 'added') {
                     var relevantIndex = parseInt(that.property[change.property.length])
@@ -9048,18 +9073,23 @@ var ObserveeChild = proto(EventEmitter, function() {
                         that.property[change.property.length] = relevantIndex + change.count // change the propertyList to match the new index
                     }
                 } else if(change.type === 'set') {
-                    parent.removeListener(change, changeHandler)
+                    parent.offChangeInternal(changeHandler)
                 }
             }
         })
     }
 
     this.get = function(property) {
-        return this._observeeParent.get(this.property.concat(parsePropertyList(property)))
+        var result = this._observeeParent.get(this.property.concat(parsePropertyList(property)))
+        result.options = this.options
+        return result
     }
 
     this.set = function(property, value) {
         setInternal(this._observeeParent, this.property.concat(parsePropertyList(property)), value, this.options)
+    }
+    this.unset = function(property) {
+        unsetInternal(this._observeeParent, this.property.concat(parsePropertyList(property)), this.options)
     }
 
     this.push = function(/*values...*/) {
@@ -9132,6 +9162,19 @@ function setInternal(that, propertyList, value, options) {
 
     if(options.union !== undefined)
         unionizeEvents(that, internalObservee, propertyList, options.union)
+}
+
+// that - the Observee object
+function unsetInternal(that, propertyList, options) {
+    if(propertyList.length === 0) throw new Error("You can't set at the top-level, setting like that only works for ObserveeChild (sub-observees created with 'get')")
+
+    var pointer = getPropertyPointer(that.subject, propertyList)
+
+    delete pointer.obj[pointer.key]
+
+    var event = {type: 'unset', property: propertyList}
+    if(options.data !== undefined) event.data = event.id = options.data
+    that.emit('change',event)
 }
 
 function pushInternal(that, propertyList, args, options) {
@@ -9249,7 +9292,7 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
             that.emit('change', containerChange)
         }
     })
-    that.on('change', containerChangeHandler = function(change) {
+    that.onChangeInternal(containerChangeHandler = function(change) {
         var changedPropertyDepth = change.property.length
 
         if(collapse) {
@@ -9296,7 +9339,7 @@ function unionizeEvents(that, innerObservee, propertyList, collapse) {
 
     var removeUnion = function() {
         innerObservee.removeListener('change', innerChangeHandler)
-        that.removeListener('change', containerChangeHandler)
+        that.offChangeInternal(containerChangeHandler)
     }
 }
 
@@ -9348,15 +9391,7 @@ module.exports = function(t) {
 
 
 
-        this.test("setting top level should throw an exception", function() {
-            var x = O([1,2,3])
-
-            x.set([], 3)
-            this.eq(x.subject, 4)
-        })
-
-
-    /*
+    //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
             this.count(12)
@@ -9396,6 +9431,31 @@ module.exports = function(t) {
             var splicedValues = subject.get('c').splice(1, 1, 99)
             this.ok(equal(obj.c, [4,99,2,1]), obj.c)
             this.ok(equal(splicedValues, [3]))
+        })
+
+        this.test("unset", function(t) {
+            this.count(4)
+
+            var subject = {a:1,b:2}
+            var obs = O(subject)
+
+            var n = 0
+            obs.on('change', function(change) {
+                if(n === 0) {
+                    t.ok(equal(change, {type:'unset', property: ['a']}), change)
+                } else {
+                    t.ok(equal(change, {type:'unset', property: ['b']}), change)
+                }
+
+                n++
+            })
+
+            obs.unset('a')
+            t.ok(equal(obs.subject, {b:2}))
+
+            var b = obs.get('b')
+            b.unset([])
+            t.ok(equal(obs.subject, {}))
         })
 
         this.test("pop", function() {
@@ -9935,6 +9995,20 @@ module.exports = function(t) {
         observer.get('c').append([5,6,7])// prints "My c property got 3 new values: 5,6,7."
     })
 
+    this.test("errors", function() {
+        this.test("setting top level should throw an exception", function() {
+            this.count(1)
+
+            var x = O([1,2,3])
+
+            try {
+                x.set([], 3)
+            } catch(e) {
+                this.eq(e.message, "You can't set at the top-level, setting like that only works for ObserveeChild (sub-observees created with 'get')")
+            }
+        })
+    })
+
     this.test('former bugs', function() {
         this.test("union push on array with 1 or more elements didn't correctly setup change event handlers", function(t) {
             this.count(2)
@@ -10112,12 +10186,45 @@ module.exports = function(t) {
             x.set('a', 1) // was causing an exception
         })
 
-        this.test("setting top level wasn't working right", function() {
-            var x = O([1,2,3])
+        this.test("ObserveeChild could be in an invalid state when 'get' is called on its parent", function(t) {
+            var x = O([{a:1}, {a:2}])
 
-            x.set([], [4,5,6])
-            this.eq(x.subject[0], 4)
+            x.on('change', function() {
+                t.eq(first.get('a').subject, 1)
+            })
+
+            var first = x.get(0)
+            x.splice(0, 0, {a:0}) // was causing an exception
         })
+
+        this.test("ObserveeChild wasn't getting its parent's options", function(t) {
+            var x = O([{a:1}, {a:2}])
+            var xi = x.data({hi:1})
+            var y = xi.get(0)
+
+            y.on('change', function(change) {
+                t.eq(change.data.hi, 1)
+            })
+
+            y.set('a', 8)
+        })
+
+        // todo: consider fixing this - not entirely sure it is a "problem" to be "fixed" tho
+        // this.test("event handlers were being executed out of order when ObserveeChild is being used", function() {
+        //     var x = O([{a:1}, {a:2}])
+        //
+        //     var step = 0
+        //     x.on('change', function() {
+        //         step++
+        //         t.eq(step, 1)
+        //     })
+        //     x.get('0.a', function() {
+        //         step++
+        //         t.eq(step, 2)
+        //     })
+        //
+        //     x.set('0.a', 9)
+        // })
     })
 
     //*/

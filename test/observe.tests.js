@@ -10,6 +10,8 @@ module.exports = function(t) {
 
 
 
+
+
     //*
     this.test('basic methods and events', function(t) {
         this.test("basic set, get, push, append, and splice", function(t) {
@@ -814,6 +816,18 @@ module.exports = function(t) {
 
             var first = x.get(0)
             x.splice(0, 0, {a:0}) // was causing an exception
+        })
+
+        this.test("ObserveeChild wasn't getting its parent's options", function(t) {
+            var x = O([{a:1}, {a:2}])
+            var xi = x.data({hi:1})
+            var y = xi.get(0)
+
+            y.on('change', function(change) {
+                t.eq(change.data.hi, 1)
+            })
+
+            y.set('a', 8)
         })
 
         // todo: consider fixing this - not entirely sure it is a "problem" to be "fixed" tho

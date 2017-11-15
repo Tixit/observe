@@ -1,7 +1,7 @@
 {"name":"observe",
  "description": "A powerful, pragmatic implementation of the observer pattern for javascript objects and arrays.",
  "keywords": ["observe", "observer", "observer pattern", "reactive", "mvc", "data binding", "MutationObserver", "publish", "subscribe", "pubsub", "event", "events"],
- "version":"1.4.0",
+ "version":"1.4.1",
  "main": "observe.js",
  "author": "Billy Tetrud <bitetrudpublic@gmail.com> (https://github.com/fresheneesz/)",
  "license": {
